@@ -10,7 +10,7 @@
 
 ## 📖 Overview
 
-This repository contains the **full source code** for the Samsung Exynos FRP (Factory Reset Protection) removal tool — a .NET 8.0 Windows Forms application that removes FRP/ZeroKnox protection from Samsung Exynos-powered devices. The project includes the complete UI, engine integration, and **all device preset configurations** (48 JSON files).
+This repository contains the **full source code** for the Samsung Exynos FRP (Factory Reset Protection) removal tool — a .NET 8.0 Windows Forms application (Master Unlock) that removes FRP/Knox protection from Samsung Exynos-powered devices. The project includes the complete UI, engine integration, and **all device preset configurations** (48 JSON files).
 
 ---
 
@@ -159,7 +159,7 @@ warning and the flash step reports that `ExynosCli.exe` is unavailable.
 ## 📘 How to Use
 
 1. **Connect** your Samsung Exynos device to the PC via USB
-2. **Launch** `TFT Unlock Tool Pro`
+2. **Launch** `Master Unlock`
 3. **Select** the detected COM port from the dropdown (or click 🔄 to refresh)
 4. **Open** the Config dropdown — it will fetch presets from the server
 5. **Choose** the preset matching your device's chipset

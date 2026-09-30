@@ -14,7 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ZeroKnoxRemoval
+namespace MasterUnlock
 {
     public class PresetRecord
     {
@@ -62,7 +62,7 @@ namespace ZeroKnoxRemoval
 
             _tempBasePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "ZeroKnox Removal");
+                "Master Unlock");
             _exynosWorkingDir = Path.Combine(_tempBasePath, "exynos");
 
 

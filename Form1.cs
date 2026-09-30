@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ZeroKnoxRemoval
+namespace MasterUnlock
 {
     public partial class MainForm : Form
     {
@@ -23,9 +23,9 @@ namespace ZeroKnoxRemoval
         private RichTextBox txtLog = null!;  
         private Label _lblDetected = null!;
 
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         // ENGINE + STATE
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         private readonly ExynosFlashEngine _engine;
         private ExynosDetectResult? _lastDetected;
 
@@ -35,7 +35,7 @@ namespace ZeroKnoxRemoval
         public CancellationTokenSource stop = new CancellationTokenSource();
         private readonly object _stopLock = new object();
 
-        public static string namesoftware = "ZeroKnox Removal";
+        public static string namesoftware = "Master Unlock";
         public static string version = "1.0";
 
         // ════════════════════════════════════════════════════════════
@@ -84,7 +84,7 @@ namespace ZeroKnoxRemoval
         // ════════════════════════════════════════════════════════════
         private void BuildLayout()
         {
-            Text = "ZeroKnox Removal";
+            Text = "Master Unlock";
             BackColor = Color.FromArgb(28, 30, 38);
             ForeColor = Color.White;
             ClientSize = new Size(760, 540);
@@ -428,7 +428,7 @@ namespace ZeroKnoxRemoval
 
             SendLog("Connecting to config server...", Color.Cyan, true);
 
-            string tempDir = Path.Combine(Path.GetTempPath(), ".tft_cfg_" + Environment.ProcessId);
+            string tempDir = Path.Combine(Path.GetTempPath(), ".master_unlock_cfg_" + Environment.ProcessId);
             Directory.CreateDirectory(tempDir);
 
             int ok = 0, fail = 0;
