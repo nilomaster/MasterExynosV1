@@ -1,4 +1,4 @@
-namespace ZeroKnoxRemoval
+namespace MasterUnlock
 {
     partial class MainForm
     {
@@ -18,7 +18,7 @@ namespace ZeroKnoxRemoval
             AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Font;
             ClientSize          = new System.Drawing.Size(760, 560);
             Name                = "MainForm";
-            Text                = "TFT Exynos sBoot Flasher";
+            Text                = "Master Unlock";
             ResumeLayout(false);
         }
     }

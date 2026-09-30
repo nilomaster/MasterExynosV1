@@ -5,10 +5,10 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Product>TFT Unlock Tool Pro</Product>
-    <Company>TFT</Company>
+    <Product>Master Unlock</Product>
+    <Company>MasterDev</Company>
 	<ApplicationManifest>app.manifest</ApplicationManifest>
-    <Description>TFT Exynos Odin Mode FRP Remove Tool</Description>
+    <Description>Master Unlock - Samsung Exynos Odin Mode FRP Remove Tool</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
