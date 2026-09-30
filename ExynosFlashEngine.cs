@@ -652,12 +652,16 @@ namespace MasterUnlock
 
             try
             {
-                // ИСПОЛЬЗУЕМ ВРЕМЕННУЮ ДИРЕКТОРИЮ!
+                // Use working directory
                 string cliPath = Path.Combine(_exynosWorkingDir, "ExynosCli.exe");
 
                 if (!File.Exists(cliPath))
                 {
-                    Log($"ExynosCli.exe missing from secure temp vault!", Color.Red, true);
+                    Log("====================================================================================================", Color.OrangeRed, true);
+                    Log("[ERRO: MOTOR DE FLASH EXYNOS INDISPONIVEL]", Color.Red, true);
+                    Log("O executavel 'ExynosCli.exe' ou pacote 'exynos.zip' nao foi encontrado na pasta da aplicacao.", Color.White, true);
+                    Log("Certifique-se de que os arquivos de suporte do Exynos (exynos.zip) estao presentes no diretorio raiz.", Color.Yellow, true);
+                    Log("====================================================================================================", Color.OrangeRed, true);
                     return false;
                 }
 
@@ -681,7 +685,8 @@ namespace MasterUnlock
                 }
                 else if (mode == "mtp")
                 {
-                    Log("Device in MTP mode. Please use 'Auto Detect & Flash' first to reboot to Download Mode.", Color.Orange, true);
+                    Log("[AVISO] O dispositivo conectado esta em Modo MTP (Normal).", Color.Orange, true);
+                    Log("Para executar o Reset FRP em aparelhos Exynos compativeis, coloque o aparelho em Modo Download (Odin).", Color.Yellow, true);
                     return false;
                 }
                 else
@@ -693,7 +698,8 @@ namespace MasterUnlock
                     }
                     else
                     {
-                        Log($"Selected port {comPort} is not a Samsung Download/Odin port. Please select the correct port or use Auto Detect.", Color.Red, true);
+                        Log($"A porta selecionada ({comPort}) nao foi identificada como uma porta Samsung Download/Odin.", Color.Red, true);
+                        Log("Certifique-se de que o aparelho Samsung esta conectado em Modo Download e com os drivers instalados.", Color.Yellow, true);
                         return false;
                     }
                 }
@@ -883,16 +889,14 @@ namespace MasterUnlock
             if (low == "booting custom ramdisk:" || low.StartsWith("booting custom ramdisk:"))
             { Log("  Executing exploit: Dumping", Color.Cyan, true); return; }
 
-            string display = low switch
+            string? display = low switch
             {
                 var s when s.StartsWith("successfuly opened port:")
                     || s.StartsWith("successfully opened port:") => "Device channel established successfully",
 
-                // Заменяем на нужные тексты
                 "starting exploit" => "Patching in progress....",
                 "dumping sboot" => "Read boot and FRP partition",
 
-                // Скрываем — возвращаем null (обрабатываем ниже)
                 "analyzing sboot" => null,
                 "loading boot images" => null,
                 "dumping boot images" => null,
@@ -902,9 +906,8 @@ namespace MasterUnlock
                 "sending ramdisk to device" => null,
                 "setting cmdline" => null,
 
-                // Заменяем
                 "rebooting" => "- Reboot Phone...",
-                var s when s.Contains("completed successfully") => null, // обрабатывается отдельно
+                var s when s.Contains("completed successfully") => null,
                 _ => msg
             };
 

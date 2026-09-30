@@ -16,6 +16,7 @@ namespace MasterUnlock
         private ComboBox comboPorts = null!;  
         private ComboBox cmbConfig = null!;  
         private Button _btnRefresh = null!;
+        private Button _btnReadInfo = null!;
         private Button _btnFlash = null!;
         private Button buttonStop = null!;  
         private ProgressBar ProgressBar = null!; 
@@ -27,7 +28,7 @@ namespace MasterUnlock
         // ENGINE + STATE
         // ============================================================
         private readonly ExynosFlashEngine _engine;
-        private ExynosDetectResult? _lastDetected;
+        private SamsungMtpDeviceInfo? _lastMtpInfo;
 
         // busyState, Watch
         public static bool busyState = false;
@@ -38,9 +39,9 @@ namespace MasterUnlock
         public static string namesoftware = "Master Unlock";
         public static string version = "1.0";
 
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         // REMOTE CONFIG
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         private const string ConfigServerUrl = "https://your.site/presets/";
         private static readonly HttpClient _httpClient = new HttpClient
         { Timeout = TimeSpan.FromSeconds(15) };
@@ -65,9 +66,9 @@ namespace MasterUnlock
         };
         private bool _configLoaded = false;
 
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         // CONSTRUCTOR
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         public MainForm()
         {
             _engine = new ExynosFlashEngine();
@@ -79,9 +80,9 @@ namespace MasterUnlock
             RefreshAll();
         }
 
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         // LAYOUT
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         private void BuildLayout()
         {
             Text = "Master Unlock";
@@ -118,25 +119,27 @@ namespace MasterUnlock
                 BackColor = Color.FromArgb(40, 42, 54),
                 ForeColor = Color.White,
             };
-            // При первом открытии — загружаем с сервера
             cmbConfig.DropDown += CmbConfig_DropDown;
 
             _btnRefresh = MakeButton("🔄", 640, 9, 60, 28, Color.FromArgb(55, 58, 72));
             _btnRefresh.Click += (_, _) => RefreshAll();
 
-            _btnFlash = MakeButton("▶ Reset FRP", 230, 50, 160, 40, Color.FromArgb(40, 120, 40));
+            // Row 2: Actions (Read Info MTP, Reset FRP, Stop)
+            _btnReadInfo = MakeButton("📱 Read Info (MTP)", 0, 50, 160, 40, Color.FromArgb(0, 122, 204));
+            _btnReadInfo.Click += BtnReadInfo_Click;
+
+            _btnFlash = MakeButton("▶ Reset FRP", 170, 50, 150, 40, Color.FromArgb(40, 120, 40));
             _btnFlash.Click += BtnFlash_Click;
 
-            // buttonStop 
-            buttonStop = MakeButton("⛔ Stop", 400, 50, 90, 40, Color.FromArgb(160, 40, 40));
+            buttonStop = MakeButton("⛔ Stop", 330, 50, 80, 40, Color.FromArgb(160, 40, 40));
             buttonStop.Enabled = false;
             buttonStop.Click += buttonStop_Click;
 
             _lblDetected = new Label
             {
-                Left = 500,
+                Left = 420,
                 Top = 58,
-                Width = 250,
+                Width = 310,
                 Height = 24,
                 ForeColor = Color.FromArgb(180, 180, 180),
                 Text = ""
@@ -182,7 +185,7 @@ namespace MasterUnlock
             panel.Controls.AddRange(new Control[]
             {
                 lblPort, comboPorts, lblConfig, cmbConfig, _btnRefresh,
-                _btnFlash, buttonStop, _lblDetected,
+                _btnReadInfo, _btnFlash, buttonStop, _lblDetected,
                 ProgressBar, _lblStatus, txtLog
             });
         }
@@ -274,9 +277,9 @@ namespace MasterUnlock
             }
         }
 
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         // Elapseddone2
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         public void Elapseddone2(Stopwatch watch)
         {
             TimeSpan elapsed = watch.Elapsed;
@@ -284,14 +287,8 @@ namespace MasterUnlock
             string str2 = string.Format("{0:00}", elapsed.Seconds);
 
             SendLog("____________________________________________________________________________________________________", Color.FromArgb(60, 60, 60), true);
-            SendLog(Environment.NewLine, Color.Transparent, false);
-            SendLog(namesoftware + " ", Color.FromArgb(180, 180, 180), false);
-            SendLog(version, Color.FromArgb(180, 180, 180), false);
-
-            if (str1 == "00")
-                SendLog(" Elapsed Time : " + str2 + " Seconds", Color.FromArgb(180, 180, 180), false);
-            else
-                SendLog(" Elapsed Time : " + str1 + "." + str2 + " Minutes", Color.FromArgb(180, 180, 180), false);
+            string timeStr = (str1 == "00") ? $"{str2} Seconds" : $"{str1}.{str2} Minutes";
+            SendLog($"{namesoftware} {version} Elapsed Time : {timeStr}", Color.FromArgb(180, 180, 180), true);
         }
 
         // ════════════════════════════════════════════════════════════
@@ -309,16 +306,141 @@ namespace MasterUnlock
             }
         }
 
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         // SetBusy
-        // ════════════════════════════════════════════════════════════
+        // ============================================================
         private void SetBusy(bool busy)
         {
             progressBarRunning(busy, enableStop: busy);
+            _btnReadInfo.Enabled = !busy;
             _btnFlash.Enabled = !busy;
             _btnRefresh.Enabled = !busy;
             comboPorts.Enabled = !busy;
             cmbConfig.Enabled = !busy;
+        }
+
+        // ============================================================
+        // READ DEVICE INFO (MTP / AT)
+        // ============================================================
+        private async void BtnReadInfo_Click(object? sender, EventArgs e)
+        {
+            if (busyState) return;
+
+            var cts = ResetStop();
+            SetBusy(true);
+            _lblStatus.Text = "Reading Samsung device info via MTP / AT...";
+            _lblStatus.ForeColor = Color.FromArgb(160, 160, 160);
+            Watch.Restart();
+
+            try
+            {
+                var info = await SamsungMtpReader.ReadDeviceInfoAsync(
+                    (msg, color, breakline) => SendLog(msg, color, breakline),
+                    cts.Token);
+
+                _lastMtpInfo = info;
+
+                if (info.Success)
+                {
+                    bool isExynos = info.Platform != null && info.Platform.Contains("Exynos", StringComparison.OrdinalIgnoreCase);
+
+                    if (!string.IsNullOrEmpty(info.CommercialName) || !string.IsNullOrEmpty(info.ModelNumber))
+                    {
+                        string title = info.CommercialName ?? info.ModelNumber!;
+                        if (!string.IsNullOrEmpty(info.Chipset))
+                        {
+                            var parts = info.Chipset.Split(' ');
+                            if (parts.Length >= 2)
+                                title += $" [{parts[0]} {parts[1]}]";
+                            else
+                                title += $" [{info.Chipset}]";
+                        }
+
+                        if (!isExynos)
+                        {
+                            title += " ⚠️ Incompativel Exynos";
+                            _lblDetected.ForeColor = Color.OrangeRed;
+                        }
+                        else
+                        {
+                            _lblDetected.ForeColor = Color.FromArgb(80, 230, 100);
+                        }
+
+                        _lblDetected.Text = title;
+                    }
+
+                    _lblStatus.Text = isExynos
+                        ? "Device info read successfully (Exynos compatible)."
+                        : $"Device info read: {info.Platform} (Incompatible with Exynos Flasher)";
+                    _lblStatus.ForeColor = isExynos ? Color.LimeGreen : Color.Orange;
+
+                    // Auto-load configs if not already loaded
+                    if (!_configLoaded)
+                    {
+                        string? localDir = FindLocalPresetsDirectory();
+                        if (localDir != null)
+                        {
+                            _engine.LoadPresetsFromDirectory(localDir);
+                            _configLoaded = true;
+                            UpdateConfigCombo();
+                        }
+                    }
+
+                    if (isExynos)
+                    {
+                        // Auto-select matching preset only for Exynos
+                        if (!string.IsNullOrEmpty(info.RecommendedPreset) && cmbConfig.Items.Count > 0)
+                        {
+                            for (int i = 0; i < cmbConfig.Items.Count; i++)
+                            {
+                                string itemText = cmbConfig.Items[i]?.ToString() ?? "";
+                                if (itemText.Contains(info.RecommendedPreset, StringComparison.OrdinalIgnoreCase) ||
+                                    (info.ModelNumber != null && itemText.Contains(info.ModelNumber, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    cmbConfig.SelectedIndex = i;
+                                    SendLog($"[MTP] Preset '{itemText}' auto-selected.", Color.Lime, true);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // For non-Exynos, deselect preset to prevent accidental flash
+                        cmbConfig.SelectedIndex = -1;
+                    }
+
+                    // Auto-select detected port if available
+                    if (!string.IsNullOrEmpty(info.PortName))
+                    {
+                        for (int i = 0; i < comboPorts.Items.Count; i++)
+                        {
+                            if (comboPorts.Items[i]?.ToString()?.StartsWith(info.PortName, StringComparison.OrdinalIgnoreCase) == true)
+                            {
+                                comboPorts.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    _lblStatus.Text = "Failed to read device info.";
+                    _lblStatus.ForeColor = Color.OrangeRed;
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLog($"[MTP Error] {ex.Message}", Color.Red, true);
+                _lblStatus.Text = "Error reading device info.";
+                _lblStatus.ForeColor = Color.Red;
+            }
+            finally
+            {
+                Watch.Stop();
+                Elapseddone2(Watch);
+                SetBusy(false);
+            }
         }
 
         // ════════════════════════════════════════════════════════════
@@ -484,6 +606,47 @@ namespace MasterUnlock
             string? comPort = comboPorts.SelectedItem?.ToString();
             string? display = cmbConfig.SelectedItem?.ToString();
 
+            // CHECK 1: Non-Exynos SoC Block
+            if (_lastMtpInfo != null && _lastMtpInfo.Success &&
+                _lastMtpInfo.Platform != null && !_lastMtpInfo.Platform.Contains("Exynos", StringComparison.OrdinalIgnoreCase))
+            {
+                Watch.Reset();
+                Watch.Start();
+                txtLog.Text = null;
+
+                SendLog("====================================================================================================", Color.OrangeRed, true);
+                SendLog("[BLOQUEIO DE SEGURANCA: APARELHO INCOMPATIVEL COM O MOTOR EXYNOS]", Color.Red, true);
+                SendLog("====================================================================================================", Color.OrangeRed, true);
+                SendLog($"Aparelho Detectado : {_lastMtpInfo.CommercialName ?? _lastMtpInfo.ModelNumber} ({_lastMtpInfo.ModelNumber})", Color.White, true);
+                SendLog($"Plataforma / SoC   : {_lastMtpInfo.Platform} - {_lastMtpInfo.Chipset}", Color.Yellow, true);
+                SendLog("", Color.White, true);
+                SendLog("MOTIVO DA INCOMPATIBILIDADE:", Color.OrangeRed, true);
+                SendLog("• O Master Unlock (Modulo Exynos) opera exclusivamente via exploit Bootrom/sBoot para chips SAMSUNG EXYNOS.", Color.White, true);
+                SendLog($"• O seu aparelho utiliza processador {_lastMtpInfo.Platform}, o qual NAO possui arquitetura Exynos e nao aceita este exploit.", Color.White, true);
+                SendLog("• O procedimento foi interrompido por seguranca para evitar corrupcao de boot ou travamento do aparelho.", Color.Orange, true);
+                SendLog("", Color.White, true);
+                SendLog("SOLUCAO RECOMENDADA:", Color.Cyan, true);
+                if (_lastMtpInfo.Platform.Contains("MediaTek") || _lastMtpInfo.Platform.Contains("MTK"))
+                {
+                    SendLog("• Para aparelhos MediaTek (Helio / Dimensity): Utilize ferramentas compativeis com Bootrom MTK (ex: MTK Client, SP Flash Tool, SamFw MTK).", Color.LimeGreen, true);
+                }
+                else if (_lastMtpInfo.Platform.Contains("Qualcomm"))
+                {
+                    SendLog("• Para aparelhos Qualcomm Snapdragon: Utilize ferramentas com suporte a modo EDL (Emergency Download / Firehose).", Color.LimeGreen, true);
+                }
+                else if (_lastMtpInfo.Platform.Contains("UNISOC") || _lastMtpInfo.Platform.Contains("Spreadtrum"))
+                {
+                    SendLog("• Para aparelhos UNISOC / Spreadtrum: Utilize ferramentas compativeis com SPD Diag / Research Download.", Color.LimeGreen, true);
+                }
+                SendLog("====================================================================================================", Color.OrangeRed, true);
+
+                _lblStatus.Text = $"✗ Bloqueado: Processador {_lastMtpInfo.Platform}";
+                _lblStatus.ForeColor = Color.OrangeRed;
+                Watch.Stop();
+                Elapseddone2(Watch);
+                return;
+            }
+
             if (string.IsNullOrEmpty(comPort))
             {
                 SendLog("Por favor, conecte o dispositivo Samsung via USB e selecione a porta COM!", Color.Orange, true);
@@ -492,7 +655,7 @@ namespace MasterUnlock
 
             if (string.IsNullOrEmpty(display) || display.StartsWith("▼"))
             {
-                SendLog("Por favor, selecione uma configuracao de chipset/modelo valida!", Color.Orange, true);
+                SendLog("Por favor, selecione uma configuracao de chipset/modelo Exynos valida!", Color.Orange, true);
                 return;
             }
 
@@ -520,7 +683,7 @@ namespace MasterUnlock
             {
                 await Task.Delay(300, stop.Token);
 
-                // Скачиваем JSON с сервера
+                // Fetch JSON from server / local
                 SendLog("Fetching config from server...", Color.Cyan, true);
                 bool downloaded = await _engine.DownloadPresetAsync(cfg.PresetName!, ConfigServerUrl);
                 if (!downloaded)
