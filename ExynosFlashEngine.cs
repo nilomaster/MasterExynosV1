@@ -79,7 +79,7 @@ namespace MasterUnlock
                 if (Directory.Exists(_exynosWorkingDir))
                     Directory.Delete(_exynosWorkingDir, recursive: true);
 
-                // Создаём папку exynos и сразу делаем СКРЫТОЙ
+                // Create exynos folder and set as hidden
                 var exynosDir = Directory.CreateDirectory(_exynosWorkingDir);
                 exynosDir.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
 
@@ -94,7 +94,7 @@ namespace MasterUnlock
                     Debug.WriteLine("Exynos payload (exynos.zip) not found next to the executable.");
                 }
 
-                // Создаём пустую папку config — JSON туда будут скачаны перед flash
+                // Create presets folder
                 Directory.CreateDirectory(Path.Combine(_exynosWorkingDir, "presets"));
 
                 Debug.WriteLine($"Exynos extracted to: {_exynosWorkingDir}");
@@ -124,8 +124,8 @@ namespace MasterUnlock
         }
 
         /// <summary>
-        /// Скачивает один JSON конфиг с сервера в exynos/presets/
-        /// Вызывается перед каждым flash. После flash папка presets очищается.
+        /// Downloads single JSON config from server to exynos/presets/
+        /// Called before each flash. Presets folder is cleaned after flash.
         /// </summary>
         public async Task<bool> DownloadPresetAsync(string presetName, string serverBaseUrl)
         {
@@ -179,8 +179,8 @@ namespace MasterUnlock
         }
 
         /// <summary>
-        /// Очищает папку config — вызывается после flash (успех или ошибка).
-        /// JSON файлы не хранятся локально для защиты.
+        /// Clears presets folder - called after flash (success or failure).
+        /// JSON files are cleaned for security.
         /// </summary>
         public void ClearPresets()
         {
@@ -244,7 +244,7 @@ namespace MasterUnlock
             Presets.Clear();
             Log("Loading Exynos firmware config...", Color.Cyan, true);
 
-            // ТЕПЕРЬ ЧИТАЕМ ИЗ TEMP ПАПКИ
+            // Read from working presets folder
             string presetsPath = Path.Combine(_exynosWorkingDir, "presets");
             if (!Directory.Exists(presetsPath))
             {
@@ -252,7 +252,7 @@ namespace MasterUnlock
                 return;
             }
 
-            // ... [Остальной код загрузки JSON остается без изменений] ...
+            // Load and parse JSON presets
             foreach (string jsonFile in Directory.GetFiles(presetsPath, "*.json"))
             {
                 try
@@ -311,7 +311,7 @@ namespace MasterUnlock
                 .ToList();
         }
 
-        // Загружает пресеты из любой папки (используется для remote загрузки)
+        // Loads presets from specified directory (used for local/remote loading)
         public void LoadPresetsFromDirectory(string presetsPath)
         {
             Presets.Clear();
@@ -635,9 +635,9 @@ namespace MasterUnlock
             return $"{chipL}_dpolicy_extract";
         }
 
-        // ══════════════════════════════════════════════════════════════
-        // FlashAsync — с проверкой режима устройства
-        // ══════════════════════════════════════════════════════════════
+        // ==============================================================
+        // FlashAsync - with device mode verification
+        // ==============================================================
         public async Task<bool> FlashAsync(string comPort, string presetName, CancellationToken ct = default)
         {
             lock (_processLock)
@@ -652,12 +652,16 @@ namespace MasterUnlock
 
             try
             {
-                // ИСПОЛЬЗУЕМ ВРЕМЕННУЮ ДИРЕКТОРИЮ!
+                // Use working directory
                 string cliPath = Path.Combine(_exynosWorkingDir, "ExynosCli.exe");
 
                 if (!File.Exists(cliPath))
                 {
-                    Log($"ExynosCli.exe missing from secure temp vault!", Color.Red, true);
+                    Log("====================================================================================================", Color.OrangeRed, true);
+                    Log("[ERRO: MOTOR DE FLASH EXYNOS INDISPONIVEL]", Color.Red, true);
+                    Log("O executavel 'ExynosCli.exe' ou pacote 'exynos.zip' nao foi encontrado na pasta da aplicacao.", Color.White, true);
+                    Log("Certifique-se de que os arquivos de suporte do Exynos (exynos.zip) estao presentes no diretorio raiz.", Color.Yellow, true);
+                    Log("====================================================================================================", Color.OrangeRed, true);
                     return false;
                 }
 
@@ -681,7 +685,8 @@ namespace MasterUnlock
                 }
                 else if (mode == "mtp")
                 {
-                    Log("Device in MTP mode. Please use 'Auto Detect & Flash' first to reboot to Download Mode.", Color.Orange, true);
+                    Log("[AVISO] O dispositivo conectado esta em Modo MTP (Normal).", Color.Orange, true);
+                    Log("Para executar o Reset FRP em aparelhos Exynos compativeis, coloque o aparelho em Modo Download (Odin).", Color.Yellow, true);
                     return false;
                 }
                 else
@@ -693,21 +698,22 @@ namespace MasterUnlock
                     }
                     else
                     {
-                        Log($"Selected port {comPort} is not a Samsung Download/Odin port. Please select the correct port or use Auto Detect.", Color.Red, true);
+                        Log($"A porta selecionada ({comPort}) nao foi identificada como uma porta Samsung Download/Odin.", Color.Red, true);
+                        Log("Certifique-se de que o aparelho Samsung esta conectado em Modo Download e com os drivers instalados.", Color.Yellow, true);
                         return false;
                     }
                 }
 
-                // 1. Токен
+                // 1. Token
                 string token = GenerateToken();
 
-                // 2. .session файл — ASCII без BOM
+                // 2. .session file - ASCII without BOM
                 WriteSession(_exynosWorkingDir, token);
 
-                // 3. ADB ключ
+                // 3. ADB key
                 SyncAdbKey(_exynosWorkingDir);
 
-                // 4. Аргументы
+                // 4. Arguments
                 string arguments =
                     $"--exynos-dir \"{_exynosWorkingDir}\" " +
                     $"--action boot " +
@@ -725,9 +731,9 @@ namespace MasterUnlock
             }
         }
 
-        // ══════════════════════════════════════════════════════════════
-        // RunProcessAsync — using System.Diagnostics.Process (надёжнее)
-        // ══════════════════════════════════════════════════════════════
+        // ==============================================================
+        // RunProcessAsync - using System.Diagnostics.Process
+        // ==============================================================
         public async Task<bool> RunProcessAsync(string exePath, string arguments, CancellationToken ct = default)
         {
             TerminateCurrentProcess();
@@ -759,7 +765,7 @@ namespace MasterUnlock
                     process.StartInfo = psi;
                     process.EnableRaisingEvents = true;
 
-                    // Буферы для вывода (обработка в реальном времени)
+                    // Output buffers (real-time stream handling)
                     process.OutputDataReceived += (s, e) =>
                     {
                         if (e.Data != null)
@@ -777,13 +783,13 @@ namespace MasterUnlock
 
                     process.Start();
 
-                    // Сохраняем ссылку на процесс для TerminateCurrentProcess
+                    // Store child process reference for termination
                     _childProcess = process;
 
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
 
-                    // Ожидаем завершения или отмены
+                    // Wait for completion or cancellation
                     while (!process.HasExited)
                     {
                         if (ct.IsCancellationRequested)
@@ -792,7 +798,7 @@ namespace MasterUnlock
                             Log("Process killed by cancellation.", Color.Orange, true);
                             return false;
                         }
-                        // Небольшая задержка, чтобы не нагружать CPU
+                        // Small delay to prevent high CPU usage
                         Thread.Sleep(100);
                     }
 
@@ -871,11 +877,11 @@ namespace MasterUnlock
             if (pMatch.Success && double.TryParse(pMatch.Groups[1].Value, out double pct))
                 OnProgressChanged?.Invoke(pct, $"Processing {pct}%...");
 
-            // ── Скрываем технические строки (файлы ramdisk, пути, control transfer) ──
+            // Hide technical raw lines (ramdisk files, paths, control transfers)
             if (low.StartsWith("loaded ") && low.Contains("ramdisk file(s)"))
                 return; // "Loaded 20 ramdisk file(s) from ..."
             if (msg.TrimStart().StartsWith("- "))
-                return; // "  - adb_keys (1434 bytes)" и т.д.
+                return; // "  - adb_keys (1434 bytes)" etc.
             if (low.Contains("control transfer failed"))
                 return;
             if (low.Contains("failed connecting to the device"))
@@ -883,16 +889,14 @@ namespace MasterUnlock
             if (low == "booting custom ramdisk:" || low.StartsWith("booting custom ramdisk:"))
             { Log("  Executing exploit: Dumping", Color.Cyan, true); return; }
 
-            string display = low switch
+            string? display = low switch
             {
                 var s when s.StartsWith("successfuly opened port:")
                     || s.StartsWith("successfully opened port:") => "Device channel established successfully",
 
-                // Заменяем на нужные тексты
                 "starting exploit" => "Patching in progress....",
                 "dumping sboot" => "Read boot and FRP partition",
 
-                // Скрываем — возвращаем null (обрабатываем ниже)
                 "analyzing sboot" => null,
                 "loading boot images" => null,
                 "dumping boot images" => null,
@@ -902,13 +906,12 @@ namespace MasterUnlock
                 "sending ramdisk to device" => null,
                 "setting cmdline" => null,
 
-                // Заменяем
                 "rebooting" => "- Reboot Phone...",
-                var s when s.Contains("completed successfully") => null, // обрабатывается отдельно
+                var s when s.Contains("completed successfully") => null,
                 _ => msg
             };
 
-            // Скрываем null-строки
+            // Hide null or empty lines
             if (display == null) return;
 
             Color logColor = tag switch
@@ -924,25 +927,132 @@ namespace MasterUnlock
 
         public string[] ScanComPorts()
         {
-            var ports = new List<string>();
+            return ScanDetailedComPorts().Select(p => p.PortName).ToArray();
+        }
+
+        public List<ComPortInfo> ScanDetailedComPorts()
+        {
+            var result = new List<ComPortInfo>();
+            var seenPorts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                IntPtr hDevInfo = SetupDiGetClassDevs(IntPtr.Zero, null, IntPtr.Zero,
+                    DIGCF_ALLCLASSES | DIGCF_PRESENT);
+
+                if (hDevInfo != INVALID_HANDLE_VALUE)
+                {
+                    try
+                    {
+                        var devInfoData = new SP_DEVINFO_DATA();
+                        devInfoData.cbSize = (uint)Marshal.SizeOf(devInfoData);
+
+                        for (uint i = 0; SetupDiEnumDeviceInfo(hDevInfo, i, ref devInfoData); i++)
+                        {
+                            var idBuf = new char[1024];
+                            string hwId = "";
+                            if (SetupDiGetDeviceInstanceId(hDevInfo, ref devInfoData, idBuf, 1024, out _))
+                            {
+                                hwId = new string(idBuf).TrimEnd('\0');
+                            }
+
+                            string desc = "";
+                            var descBuf = new char[512];
+                            if (SetupDiGetDeviceRegistryProperty(hDevInfo, ref devInfoData, SPDRP_DEVICEDESC, out _, descBuf, (uint)(descBuf.Length * sizeof(char)), out _))
+                            {
+                                desc = new string(descBuf).TrimEnd('\0');
+                            }
+
+                            string fn = "";
+                            var fnBuf = new char[512];
+                            if (SetupDiGetDeviceRegistryProperty(hDevInfo, ref devInfoData, SPDRP_FRIENDLYNAME, out _, fnBuf, (uint)(fnBuf.Length * sizeof(char)), out _))
+                            {
+                                fn = new string(fnBuf).TrimEnd('\0');
+                            }
+
+                            string port = ExtractComPort(hDevInfo, ref devInfoData);
+                            if (string.IsNullOrEmpty(port) && !string.IsNullOrEmpty(fn))
+                            {
+                                var m = Regex.Match(fn, @"\(COM(\d+)\)", RegexOptions.IgnoreCase);
+                                if (m.Success) port = "COM" + m.Groups[1].Value;
+                            }
+
+                            if (!string.IsNullOrEmpty(port) && !seenPorts.Contains(port))
+                            {
+                                bool isSam = hwId.Contains("VID_04E8", StringComparison.OrdinalIgnoreCase) ||
+                                             desc.Contains("SAMSUNG", StringComparison.OrdinalIgnoreCase) ||
+                                             fn.Contains("SAMSUNG", StringComparison.OrdinalIgnoreCase);
+
+                                bool isDl = hwId.Contains("PID_6601", StringComparison.OrdinalIgnoreCase) ||
+                                            desc.Contains("Download", StringComparison.OrdinalIgnoreCase);
+
+                                bool isModem = hwId.Contains("PID_6860", StringComparison.OrdinalIgnoreCase) ||
+                                               desc.Contains("Modem", StringComparison.OrdinalIgnoreCase) ||
+                                               fn.Contains("Modem", StringComparison.OrdinalIgnoreCase);
+
+                                string cleanFn = !string.IsNullOrEmpty(fn) ? fn : (!string.IsNullOrEmpty(desc) ? $"{desc} ({port})" : port);
+
+                                result.Add(new ComPortInfo
+                                {
+                                    PortName = port,
+                                    FriendlyName = cleanFn,
+                                    Description = !string.IsNullOrEmpty(desc) ? desc : cleanFn,
+                                    HardwareId = hwId,
+                                    IsSamsung = isSam,
+                                    IsDownloadMode = isDl,
+                                    IsModem = isModem
+                                });
+                                seenPorts.Add(port);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        SetupDiDestroyDeviceInfoList(hDevInfo);
+                    }
+                }
+            }
+            catch { }
+
+            // Registry fallback for serial devices not returned by SetupAPI
             try
             {
                 using var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
                 if (key != null)
+                {
                     foreach (string name in key.GetValueNames())
-                        if (key.GetValue(name)?.ToString() is string port)
-                            ports.Add(port);
+                    {
+                        if (key.GetValue(name)?.ToString() is string p && !string.IsNullOrEmpty(p))
+                        {
+                            if (!seenPorts.Contains(p))
+                            {
+                                bool isSam = name.Contains("Samsung", StringComparison.OrdinalIgnoreCase);
+                                result.Add(new ComPortInfo
+                                {
+                                    PortName = p,
+                                    FriendlyName = isSam ? $"SAMSUNG Mobile USB Device ({p})" : p,
+                                    Description = isSam ? "SAMSUNG Mobile USB Device" : "Serial Device",
+                                    IsSamsung = isSam
+                                });
+                                seenPorts.Add(p);
+                            }
+                        }
+                    }
+                }
             }
             catch { }
 
-            ports.Sort((a, b) =>
+            // Sort: Samsung ports first, then numeric COM order
+            result.Sort((a, b) =>
             {
-                int numA = int.TryParse(a.Replace("COM", ""), out int x) ? x : 0;
-                int numB = int.TryParse(b.Replace("COM", ""), out int y) ? y : 0;
+                if (a.IsSamsung && !b.IsSamsung) return -1;
+                if (!a.IsSamsung && b.IsSamsung) return 1;
+                int numA = int.TryParse(a.PortName.Replace("COM", ""), out int x) ? x : 0;
+                int numB = int.TryParse(b.PortName.Replace("COM", ""), out int y) ? y : 0;
                 return numA.CompareTo(numB);
             });
 
-            return ports.ToArray();
+            return result;
         }
 
         private string GenerateToken()
@@ -1053,9 +1163,9 @@ namespace MasterUnlock
             return "";
         }
 
-        // ══════════════════════════════════════════════════════════════
-        // FindDownloadModePort — Samsung Download Mode (PID_6601)
-        // ══════════════════════════════════════════════════════════════
+        // ==============================================================
+        // FindDownloadModePort - Samsung Download Mode (PID_6601)
+        // ==============================================================
         public string FindDownloadModePort()
         {
             try
@@ -1098,9 +1208,9 @@ namespace MasterUnlock
             return "";
         }
 
-        // ══════════════════════════════════════════════════════════════
-        // DetectSamsungMode — определяет режим устройства
-        // ══════════════════════════════════════════════════════════════
+        // ==============================================================
+        // DetectSamsungMode - determines Samsung device connection mode
+        // ==============================================================
         public (string mode, string port) DetectSamsungMode()
         {
             try
@@ -1146,7 +1256,7 @@ namespace MasterUnlock
 
         private string ExtractComPort(IntPtr hDevInfo, ref SP_DEVINFO_DATA devInfoData)
         {
-            // Метод 1: через реестровый ключ устройства (PortName)
+            // Method 1: Device registry key (PortName)
             try
             {
                 IntPtr hKey = SetupDiOpenDevRegKey(hDevInfo, ref devInfoData,
@@ -1170,7 +1280,7 @@ namespace MasterUnlock
             }
             catch { }
 
-            // Метод 2: из FriendlyName "(COMn)"
+            // Method 2: FriendlyName "(COMn)"
             try
             {
                 var fnBuf = new char[512];
@@ -1187,13 +1297,14 @@ namespace MasterUnlock
             return "";
         }
 
-        // ── SetupAPI P/Invoke (только для работы с портами) ──
+        // SetupAPI P/Invoke (Serial and USB device queries)
         private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
         private const uint DIGCF_PRESENT = 0x00000002;
         private const uint DIGCF_ALLCLASSES = 0x00000004;
         private const uint DICS_FLAG_GLOBAL = 0x00000001;
         private const uint DIREG_DEV = 0x00000001;
         private const uint KEY_READ = 0x20019;
+        private const uint SPDRP_DEVICEDESC = 0x00000000;
         private const uint SPDRP_FRIENDLYNAME = 0x0000000C;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -1265,5 +1376,18 @@ namespace MasterUnlock
                 Debug.WriteLine($"Failed to wipe exynos dir: {ex.Message}");
             }
         }
+    }
+
+    public class ComPortInfo
+    {
+        public string PortName { get; set; } = "";
+        public string FriendlyName { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string HardwareId { get; set; } = "";
+        public bool IsSamsung { get; set; } = false;
+        public bool IsDownloadMode { get; set; } = false;
+        public bool IsModem { get; set; } = false;
+
+        public override string ToString() => string.IsNullOrEmpty(FriendlyName) ? PortName : FriendlyName;
     }
 }

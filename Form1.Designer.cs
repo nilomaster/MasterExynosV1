@@ -14,11 +14,13 @@ namespace MasterUnlock
         private void InitializeComponent()
         {
             SuspendLayout();
-            AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize          = new System.Drawing.Size(760, 560);
-            Name                = "MainForm";
-            Text                = "Master Unlock";
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+            ClientSize = new System.Drawing.Size(1200, 760);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            MinimumSize = new System.Drawing.Size(1040, 680);
+            Name = "MainForm";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Master Unlock";
             ResumeLayout(false);
         }
     }
