@@ -222,9 +222,9 @@ namespace MasterUnlock
         // Complete Samsung Model Database (Exynos, MediaTek, Qualcomm, UNISOC)
         private static readonly Dictionary<string, (string platform, string chipset, string preset, string galaxyName)> ModelMap = new(StringComparer.OrdinalIgnoreCase)
         {
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             // MEDIATEK (MTK) DEVICES
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             { "SM-A075M", ("MediaTek (MTK)", "MediaTek Helio G85 (MT6769)", "", "Galaxy A07") },
             { "SM-A075F", ("MediaTek (MTK)", "MediaTek Helio G85 (MT6769)", "", "Galaxy A07") },
             { "SM-A076M", ("MediaTek (MTK)", "MediaTek Dimensity 6100+ (MT6835)", "", "Galaxy A07 5G") },
@@ -277,9 +277,9 @@ namespace MasterUnlock
             { "SM-A346M", ("MediaTek (MTK)", "MediaTek Dimensity 1080 (MT6877V)", "", "Galaxy A34 5G") },
             { "SM-A415F", ("MediaTek (MTK)", "MediaTek Helio P65 (MT6768)", "", "Galaxy A41") },
 
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             // UNISOC DEVICES
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             { "SM-A032M", ("UNISOC (Spreadtrum)", "UNISOC SC9863A", "", "Galaxy A03 Core") },
             { "SM-A032F", ("UNISOC (Spreadtrum)", "UNISOC SC9863A", "", "Galaxy A03 Core") },
             { "SM-A035M", ("UNISOC (Spreadtrum)", "UNISOC T606", "", "Galaxy A03") },
@@ -287,9 +287,9 @@ namespace MasterUnlock
             { "SM-X200",  ("UNISOC (Spreadtrum)", "UNISOC T618", "", "Galaxy Tab A8 10.5") },
             { "SM-X205",  ("UNISOC (Spreadtrum)", "UNISOC T618", "", "Galaxy Tab A8 10.5") },
 
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             // QUALCOMM SNAPDRAGON DEVICES
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             { "SM-A015M", ("Qualcomm Snapdragon", "Snapdragon 439 (SDM439)", "", "Galaxy A01") },
             { "SM-A015F", ("Qualcomm Snapdragon", "Snapdragon 439 (SDM439)", "", "Galaxy A01") },
             { "SM-A025F", ("Qualcomm Snapdragon", "Snapdragon 450 (SDM450)", "", "Galaxy A02s") },
@@ -326,9 +326,9 @@ namespace MasterUnlock
             { "SM-S918B", ("Qualcomm Snapdragon", "Snapdragon 8 Gen 2 (SM8550)", "", "Galaxy S23 Ultra 5G") },
             { "SM-S928B", ("Qualcomm Snapdragon", "Snapdragon 8 Gen 3 (SM8650)", "", "Galaxy S24 Ultra 5G") },
 
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             // SAMSUNG EXYNOS DEVICES
-            // ════════════════════════════════════════════════════════════════
+            // ================================================================
             // Exynos 850
             { "SM-A127F", ("Samsung Exynos", "Exynos 850 (S5E3830)", "exynos850_dpolicy_extract.json", "Galaxy A12 (2021)") },
             { "SM-A127M", ("Samsung Exynos", "Exynos 850 (S5E3830)", "exynos850_dpolicy_extract.json", "Galaxy A12 (2021)") },
@@ -577,10 +577,10 @@ namespace MasterUnlock
             {
                 Log("----------------------------------------------------------------------------------------------------", Color.FromArgb(70, 70, 70), true);
                 Log($"[AVISO DE COMPATIBILIDADE - PLATAFORMA {info.Platform.ToUpper()}]", Color.Yellow, true);
-                Log($"• Dispositivo detectado: {info.CommercialName ?? info.ModelNumber} ({info.ModelNumber})", Color.White, true);
-                Log($"• Chipset / Processador: {info.Chipset}", Color.White, true);
-                Log("• Status Exynos Flasher : INCOMPATIVEL (Este modulo executa bypass apenas em chips SAMSUNG EXYNOS).", Color.OrangeRed, true);
-                Log("• Os recursos de Reset FRP do Master Unlock dependem do exploit Odin/sBoot Exynos.", Color.Orange, true);
+                Log($"- Dispositivo detectado: {info.CommercialName ?? info.ModelNumber} ({info.ModelNumber})", Color.White, true);
+                Log($"- Chipset / Processador: {info.Chipset}", Color.White, true);
+                Log("- Status Exynos Flasher : INCOMPATIVEL (Este modulo executa bypass apenas em chips SAMSUNG EXYNOS).", Color.OrangeRed, true);
+                Log("- Os recursos de Reset FRP do Master Unlock dependem do exploit Odin/sBoot Exynos.", Color.Orange, true);
                 Log("----------------------------------------------------------------------------------------------------", Color.FromArgb(70, 70, 70), true);
             }
         }
@@ -1243,7 +1243,7 @@ namespace MasterUnlock
         }
 
         // Detect all connected Samsung USB devices using SetupAPI and Registry
-        private static List<(string deviceId, string description, string friendlyName, string serialNumber)> DetectSamsungUsbDevices()
+        public static List<(string deviceId, string description, string friendlyName, string serialNumber)> DetectSamsungUsbDevices()
         {
             var list = new List<(string, string, string, string)>();
 
@@ -1293,7 +1293,7 @@ namespace MasterUnlock
         }
 
         // Find Samsung Mobile USB Modem COM port with Friendly description
-        private static string FindSamsungModemPort(out string portDescription)
+        public static string FindSamsungModemPort(out string portDescription)
         {
             portDescription = "";
             try
