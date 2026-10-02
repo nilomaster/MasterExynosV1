@@ -1411,5 +1411,183 @@ namespace MasterUnlock
             catch { }
             return "";
         }
+        // Reboot Samsung device to Download Mode via Modem AT commands or ADB
+        public static async Task<bool> RebootToDownloadModeAsync(Action<string, Color, bool> logger, CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                logger("[SAMSUNG] Iniciando procedimento para entrar em Modo Download...", Color.FromArgb(0, 210, 255), true);
+
+                // 1. Check Samsung Modem Port
+                string portName = FindSamsungModemPort(out string portDesc);
+                if (string.IsNullOrEmpty(portName))
+                {
+                    logger("[SAMSUNG] Nenhuma porta 'SAMSUNG Mobile USB Modem' encontrada automaticamente.", Color.FromArgb(255, 196, 0), true);
+                    logger("[SAMSUNG] Tentando via comando ADB reboot download...", Color.FromArgb(145, 172, 204), true);
+
+                    // Fallback via ADB
+                    bool adbSuccess = TryAdbReboot("download", logger);
+                    if (adbSuccess)
+                    {
+                        logger("[SAMSUNG] Comando de reinicializacao para Download enviado com sucesso via ADB!", Color.FromArgb(0, 230, 92), true);
+                        return true;
+                    }
+
+                    logger("[SAMSUNG] Falha: Conecte o aparelho ligado em modo normal com depuracao USB ou com porta Modem ativa.", Color.FromArgb(255, 52, 64), true);
+                    return false;
+                }
+
+                logger($"[SAMSUNG] Porta Modem detectada: {portName} ({portDesc})", Color.FromArgb(0, 210, 255), true);
+                logger("[SAMSUNG] Enviando sequencia de comandos AT para Modo Download...", Color.FromArgb(145, 172, 204), true);
+
+                SerialPort? sp = null;
+                try
+                {
+                    sp = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One)
+                    {
+                        ReadTimeout = 2000,
+                        WriteTimeout = 2000,
+                        DtrEnable = true,
+                        RtsEnable = true
+                    };
+                    sp.Open();
+
+                    // Handshake
+                    SendAtCommand(sp, "AT", 1000);
+
+                    // Primary Samsung Download Mode switch command
+                    string r1 = SendAtCommand(sp, "AT+FWSWITCH=255,1", 2000);
+                    logger($"[AT+FWSWITCH=255,1] Resposta: {(string.IsNullOrEmpty(r1) ? "OK / Reiniciando aparelho..." : r1)}", Color.FromArgb(145, 172, 204), true);
+
+                    if (string.IsNullOrEmpty(r1) || r1.Contains("OK") || r1.Contains("ERROR"))
+                    {
+                        string r2 = SendAtCommand(sp, "AT+FWSWITCH=1", 1500);
+                        if (!string.IsNullOrEmpty(r2))
+                            logger($"[AT+FWSWITCH=1] Resposta: {r2}", Color.FromArgb(145, 172, 204), true);
+                    }
+
+                    logger("[SAMSUNG] Comando enviado com sucesso! O aparelho deve reiniciar na tela azul de Download (Odin Mode).", Color.FromArgb(0, 230, 92), true);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    logger($"[SAMSUNG] Erro ao enviar comando para porta {portName}: {ex.Message}", Color.FromArgb(255, 52, 64), true);
+                    return false;
+                }
+                finally
+                {
+                    try
+                    {
+                        if (sp != null && sp.IsOpen) sp.Close();
+                        sp?.Dispose();
+                    }
+                    catch { }
+                }
+            }, ct);
+        }
+
+        // Factory Reset Samsung device via Modem AT commands or ADB
+        public static async Task<bool> FactoryResetAsync(Action<string, Color, bool> logger, CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                logger("[SAMSUNG] Iniciando procedimento de Resete de Fabrica (Factory Reset / Wipe Data)...", Color.FromArgb(255, 196, 0), true);
+
+                // 1. Check Samsung Modem Port
+                string portName = FindSamsungModemPort(out string portDesc);
+                if (string.IsNullOrEmpty(portName))
+                {
+                    logger("[SAMSUNG] Nenhuma porta 'SAMSUNG Mobile USB Modem' encontrada automaticamente.", Color.FromArgb(255, 196, 0), true);
+                    logger("[SAMSUNG] Tentando via comando ADB recovery wipe...", Color.FromArgb(145, 172, 204), true);
+
+                    // Fallback via ADB
+                    bool adbSuccess = TryAdbReboot("recovery", logger);
+                    if (adbSuccess)
+                    {
+                        logger("[SAMSUNG] Dispositivo reiniciado para Recovery Mode via ADB. Realize o Wipe Data/Factory Reset.", Color.FromArgb(0, 230, 92), true);
+                        return true;
+                    }
+
+                    logger("[SAMSUNG] Falha: Conecte o aparelho ligado em modo normal com porta Modem Samsung ativa.", Color.FromArgb(255, 52, 64), true);
+                    return false;
+                }
+
+                logger($"[SAMSUNG] Porta Modem detectada: {portName} ({portDesc})", Color.FromArgb(0, 210, 255), true);
+                logger("[SAMSUNG] Enviando comandos AT de Restauracao de Fabrica...", Color.FromArgb(145, 172, 204), true);
+
+                SerialPort? sp = null;
+                try
+                {
+                    sp = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One)
+                    {
+                        ReadTimeout = 3000,
+                        WriteTimeout = 3000,
+                        DtrEnable = true,
+                        RtsEnable = true
+                    };
+                    sp.Open();
+
+                    // Handshake
+                    SendAtCommand(sp, "AT", 1000);
+
+                    // Try standard Samsung Factory Reset AT commands
+                    string r1 = SendAtCommand(sp, "AT+FACTORST=0,0", 2500);
+                    logger($"[AT+FACTORST=0,0] Resposta: {(string.IsNullOrEmpty(r1) ? "OK / Processado" : r1)}", Color.FromArgb(145, 172, 204), true);
+
+                    string r2 = SendAtCommand(sp, "AT+FACTORST", 2000);
+                    if (!string.IsNullOrEmpty(r2))
+                        logger($"[AT+FACTORST] Resposta: {r2}", Color.FromArgb(145, 172, 204), true);
+
+                    string r3 = SendAtCommand(sp, "AT+SWRESET", 2000);
+                    if (!string.IsNullOrEmpty(r3))
+                        logger($"[AT+SWRESET] Resposta: {r3}", Color.FromArgb(145, 172, 204), true);
+
+                    logger("[SAMSUNG] Comandos de Factory Reset enviados! O aparelho executara a limpeza de dados e reiniciara.", Color.FromArgb(0, 230, 92), true);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    logger($"[SAMSUNG] Erro ao enviar comando de Factory Reset: {ex.Message}", Color.FromArgb(255, 52, 64), true);
+                    return false;
+                }
+                finally
+                {
+                    try
+                    {
+                        if (sp != null && sp.IsOpen) sp.Close();
+                        sp?.Dispose();
+                    }
+                    catch { }
+                }
+            }, ct);
+        }
+
+        private static bool TryAdbReboot(string target, Action<string, Color, bool> logger)
+        {
+            try
+            {
+                string adbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "adb.exe");
+                if (!File.Exists(adbPath)) adbPath = "adb.exe";
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = adbPath,
+                    Arguments = $"reboot {target}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using var p = Process.Start(psi);
+                if (p == null) return false;
+                p.WaitForExit(4000);
+                return p.ExitCode == 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }
