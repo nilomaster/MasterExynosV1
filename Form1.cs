@@ -77,19 +77,11 @@ namespace MasterUnlock
         private Label _lblHomeEngineStatus = null!;
 
         // View 2: Xiaomi Special Tool Controls
-        private Label _lblXiaomiModel = null!;
-        private Label _lblXiaomiChipset = null!;
-        private Label _lblXiaomiBootloader = null!;
-        private Label _lblXiaomiRom = null!;
         private CyberButton _btnXiaomiFastboot = null!;
         private CyberButton _btnXiaomiSideload = null!;
         private CyberButton _btnXiaomiFastbootToEdl = null!;
         private CyberButton _btnXiaomiInstallDrivers = null!;
         private CyberButton _btnXiaomiUsbDiag = null!;
-        private CyberButton _btnXiaomiRebootNormal = null!;
-        private CyberButton _btnXiaomiRebootRecovery = null!;
-        private CyberButton _btnXiaomiRebootFastboot = null!;
-        private CyberButton _btnXiaomiRebootEdl = null!;
         private CyberButton _btnXiaomiLogExport = null!;
         private CyberButton _btnXiaomiLogClear = null!;
         private RichTextBox _txtXiaomiLog = null!;
@@ -887,54 +879,8 @@ namespace MasterUnlock
 
             var spacerX1 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
 
-            // 2. 4 Info Status Cards (Model, Chipset, Bootloader, ROM)
-            var pnlXiaomiStatusGrid = new TableLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 64,
-                ColumnCount = 4,
-                RowCount = 1,
-                BackColor = ColorBgApp,
-                Margin = new Padding(0)
-            };
-            pnlXiaomiStatusGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-            pnlXiaomiStatusGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-            pnlXiaomiStatusGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-            pnlXiaomiStatusGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-
-            // Card 1: Model
-            var cardModel = new CyberCardPanel { Dock = DockStyle.Fill, BackColor = ColorBgCard, BorderColor = ColorBorderDark, Margin = new Padding(0, 0, 4, 0), Padding = new Padding(10, 6, 10, 6) };
-            var lblHModel = new Label { Text = "APARELHO / MODELO", Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), ForeColor = Color.FromArgb(255, 180, 0), Dock = DockStyle.Top, Height = 16 };
-            _lblXiaomiModel = new Label { Text = "Aguardando Leitura...", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = ColorTextWhite, Dock = DockStyle.Fill, AutoEllipsis = true };
-            cardModel.Controls.AddRange(new Control[] { _lblXiaomiModel, lblHModel });
-
-            // Card 2: Chipset
-            var cardChip = new CyberCardPanel { Dock = DockStyle.Fill, BackColor = ColorBgCard, BorderColor = ColorBorderDark, Margin = new Padding(4, 0, 4, 0), Padding = new Padding(10, 6, 10, 6) };
-            var lblHChip = new Label { Text = "PLATAFORMA / CHIPSET", Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), ForeColor = ColorCyanGlow, Dock = DockStyle.Top, Height = 16 };
-            _lblXiaomiChipset = new Label { Text = "Qualcomm / MediaTek", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = ColorTextWhite, Dock = DockStyle.Fill, AutoEllipsis = true };
-            cardChip.Controls.AddRange(new Control[] { _lblXiaomiChipset, lblHChip });
-
-            // Card 3: Bootloader
-            var cardBL = new CyberCardPanel { Dock = DockStyle.Fill, BackColor = ColorBgCard, BorderColor = ColorBorderDark, Margin = new Padding(4, 0, 4, 0), Padding = new Padding(10, 6, 10, 6) };
-            var lblHBL = new Label { Text = "STATUS BOOTLOADER", Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), ForeColor = ColorSuccess, Dock = DockStyle.Top, Height = 16 };
-            _lblXiaomiBootloader = new Label { Text = "Desconhecido", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = ColorTextMuted, Dock = DockStyle.Fill, AutoEllipsis = true };
-            cardBL.Controls.AddRange(new Control[] { _lblXiaomiBootloader, lblHBL });
-
-            // Card 4: ROM / HyperOS
-            var cardROM = new CyberCardPanel { Dock = DockStyle.Fill, BackColor = ColorBgCard, BorderColor = ColorBorderDark, Margin = new Padding(4, 0, 0, 0), Padding = new Padding(10, 6, 10, 6) };
-            var lblHROM = new Label { Text = "SISTEMA / ROM", Font = new Font("Segoe UI", 7.5f, FontStyle.Bold), ForeColor = Color.FromArgb(190, 105, 255), Dock = DockStyle.Top, Height = 16 };
-            _lblXiaomiRom = new Label { Text = "HyperOS / MIUI", Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = ColorTextWhite, Dock = DockStyle.Fill, AutoEllipsis = true };
-            cardROM.Controls.AddRange(new Control[] { _lblXiaomiRom, lblHROM });
-
-            pnlXiaomiStatusGrid.Controls.Add(cardModel, 0, 0);
-            pnlXiaomiStatusGrid.Controls.Add(cardChip, 1, 0);
-            pnlXiaomiStatusGrid.Controls.Add(cardBL, 2, 0);
-            pnlXiaomiStatusGrid.Controls.Add(cardROM, 3, 0);
-
-            var spacerX2 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
-
-            // 3. Action Toolbar 1: Operacoes Principais
-            var pnlXiaomiToolbar1 = new FlowLayoutPanel
+            // 2. Action Toolbar: Operacoes Principais e Logs
+            var pnlXiaomiToolbar = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
                 Height = 42,
@@ -947,7 +893,7 @@ namespace MasterUnlock
             _btnXiaomiFastboot = new CyberButton
             {
                 Text = "  Ler Info (Fastboot)",
-                Size = new Size(185, 36),
+                Size = new Size(170, 36),
                 BackColorPrimary = Color.FromArgb(190, 95, 0),
                 BackColorSecondary = Color.FromArgb(240, 130, 0),
                 BorderColor = Color.FromArgb(255, 180, 0),
@@ -961,7 +907,7 @@ namespace MasterUnlock
             _btnXiaomiSideload = new CyberButton
             {
                 Text = "  Ler Info (Sideload)",
-                Size = new Size(185, 36),
+                Size = new Size(170, 36),
                 BackColorPrimary = Color.FromArgb(115, 35, 175),
                 BackColorSecondary = Color.FromArgb(155, 60, 220),
                 BorderColor = Color.FromArgb(190, 105, 255),
@@ -975,7 +921,7 @@ namespace MasterUnlock
             _btnXiaomiFastbootToEdl = new CyberButton
             {
                 Text = "  Convert Fastboot / EDL",
-                Size = new Size(210, 36),
+                Size = new Size(195, 36),
                 BackColorPrimary = Color.FromArgb(170, 25, 45),
                 BackColorSecondary = Color.FromArgb(235, 45, 75),
                 BorderColor = Color.FromArgb(255, 90, 120),
@@ -989,7 +935,7 @@ namespace MasterUnlock
             _btnXiaomiInstallDrivers = new CyberButton
             {
                 Text = "  Instalar Drivers ADB",
-                Size = new Size(180, 36),
+                Size = new Size(170, 36),
                 BackColorPrimary = Color.FromArgb(12, 115, 95),
                 BackColorSecondary = Color.FromArgb(20, 165, 135),
                 BorderColor = Color.FromArgb(40, 225, 185),
@@ -1003,7 +949,7 @@ namespace MasterUnlock
             _btnXiaomiUsbDiag = new CyberButton
             {
                 Text = "  Diagnostico USB",
-                Size = new Size(155, 36),
+                Size = new Size(145, 36),
                 BackColorPrimary = Color.FromArgb(0, 70, 150),
                 BackColorSecondary = Color.FromArgb(0, 115, 220),
                 BorderColor = ColorCyanGlow,
@@ -1014,108 +960,48 @@ namespace MasterUnlock
             };
             _btnXiaomiUsbDiag.Click += BtnXiaomiUsbDiag_Click;
 
-            pnlXiaomiToolbar1.Controls.AddRange(new Control[] { _btnXiaomiFastboot, _btnXiaomiSideload, _btnXiaomiFastbootToEdl, _btnXiaomiInstallDrivers, _btnXiaomiUsbDiag });
-
-            // 4. Action Toolbar 2: Reboot Operations & Log Tools
-            var pnlXiaomiToolbar2 = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 38,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                BackColor = ColorBgApp,
-                Margin = new Padding(0)
-            };
-
-            _btnXiaomiRebootNormal = new CyberButton
-            {
-                Text = "  Reboot Sistema",
-                Size = new Size(140, 32),
-                BackColorPrimary = ColorBgCard,
-                BackColorSecondary = ColorBgInput,
-                BorderColor = ColorBorderDark,
-                BorderHoverColor = ColorCyanGlow,
-                ButtonIcon = CyberButtonIcon.Play,
-                TextFont = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 6, 0)
-            };
-            _btnXiaomiRebootNormal.Click += (_, _) => ExecuteXiaomiReboot("fastboot", "reboot");
-
-            _btnXiaomiRebootRecovery = new CyberButton
-            {
-                Text = "  Reboot Recovery",
-                Size = new Size(145, 32),
-                BackColorPrimary = ColorBgCard,
-                BackColorSecondary = ColorBgInput,
-                BorderColor = ColorBorderDark,
-                BorderHoverColor = Color.FromArgb(190, 105, 255),
-                ButtonIcon = CyberButtonIcon.Recovery,
-                TextFont = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 6, 0)
-            };
-            _btnXiaomiRebootRecovery.Click += (_, _) => ExecuteXiaomiReboot("fastboot", "recovery");
-
-            _btnXiaomiRebootFastboot = new CyberButton
-            {
-                Text = "  Reboot Fastboot",
-                Size = new Size(145, 32),
-                BackColorPrimary = ColorBgCard,
-                BackColorSecondary = ColorBgInput,
-                BorderColor = ColorBorderDark,
-                BorderHoverColor = Color.FromArgb(255, 180, 0),
-                ButtonIcon = CyberButtonIcon.Flash,
-                TextFont = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 6, 0)
-            };
-            _btnXiaomiRebootFastboot.Click += (_, _) => ExecuteXiaomiReboot("adb", "bootloader");
-
-            _btnXiaomiRebootEdl = new CyberButton
-            {
-                Text = "  Reboot EDL (ADB)",
-                Size = new Size(150, 32),
-                BackColorPrimary = ColorBgCard,
-                BackColorSecondary = ColorBgInput,
-                BorderColor = ColorBorderDark,
-                BorderHoverColor = ColorDanger,
-                ButtonIcon = CyberButtonIcon.Play,
-                TextFont = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 6, 0)
-            };
-            _btnXiaomiRebootEdl.Click += (_, _) => ExecuteXiaomiReboot("adb", "edl");
-
             _btnXiaomiLogExport = new CyberButton
             {
                 Text = "  Salvar Log",
-                Size = new Size(115, 32),
+                Size = new Size(115, 36),
                 BackColorPrimary = ColorBgCard,
                 BackColorSecondary = ColorBgInput,
                 BorderColor = ColorBorderDark,
                 BorderHoverColor = ColorSuccess,
                 ButtonIcon = CyberButtonIcon.Save,
-                TextFont = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 6, 0)
+                TextFont = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
             };
             _btnXiaomiLogExport.Click += (_, _) => ExportXiaomiReport();
 
             _btnXiaomiLogClear = new CyberButton
             {
                 Text = "  Limpar",
-                Size = new Size(85, 32),
+                Size = new Size(90, 36),
                 BackColorPrimary = ColorBgCard,
                 BackColorSecondary = ColorBgInput,
                 BorderColor = ColorBorderDark,
                 BorderHoverColor = ColorDanger,
                 ButtonIcon = CyberButtonIcon.Trash,
-                TextFont = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 6, 0)
+                TextFont = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
             };
             _btnXiaomiLogClear.Click += (_, _) => _txtXiaomiLog.Clear();
 
-            pnlXiaomiToolbar2.Controls.AddRange(new Control[] { _btnXiaomiRebootNormal, _btnXiaomiRebootRecovery, _btnXiaomiRebootFastboot, _btnXiaomiRebootEdl, _btnXiaomiLogExport, _btnXiaomiLogClear });
+            pnlXiaomiToolbar.Controls.AddRange(new Control[]
+            {
+                _btnXiaomiFastboot,
+                _btnXiaomiSideload,
+                _btnXiaomiFastbootToEdl,
+                _btnXiaomiInstallDrivers,
+                _btnXiaomiUsbDiag,
+                _btnXiaomiLogExport,
+                _btnXiaomiLogClear
+            });
 
-            var spacerX3 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
+            var spacerX2 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
 
-            // 5. Body: Diagnostic & Operations Terminal Log
+            // 3. Body: Diagnostic & Operations Terminal Log
             var pnlXiaomiBody = new Panel { Dock = DockStyle.Fill, BackColor = ColorBgApp };
 
             var cardXiaomiLog = new CyberCardPanel
@@ -1163,22 +1049,17 @@ namespace MasterUnlock
             pnlXiaomiBody.Controls.Add(cardXiaomiLog);
             cardXiaomiLog.BringToFront();
 
+            // WinForms docking order: add Fill first, then Top items from bottom to top
             _viewXiaomi.Controls.Add(pnlXiaomiBody);
-            _viewXiaomi.Controls.Add(spacerX3);
-            _viewXiaomi.Controls.Add(pnlXiaomiToolbar2);
-            _viewXiaomi.Controls.Add(pnlXiaomiToolbar1);
             _viewXiaomi.Controls.Add(spacerX2);
-            _viewXiaomi.Controls.Add(pnlXiaomiStatusGrid);
+            _viewXiaomi.Controls.Add(pnlXiaomiToolbar);
             _viewXiaomi.Controls.Add(spacerX1);
             _viewXiaomi.Controls.Add(cardHeroXiaomi);
 
             cardHeroXiaomi.SendToBack();
             spacerX1.SendToBack();
-            pnlXiaomiStatusGrid.SendToBack();
+            pnlXiaomiToolbar.SendToBack();
             spacerX2.SendToBack();
-            pnlXiaomiToolbar1.SendToBack();
-            pnlXiaomiToolbar2.SendToBack();
-            spacerX3.SendToBack();
             pnlXiaomiBody.BringToFront();
         }
 
@@ -1452,12 +1333,6 @@ namespace MasterUnlock
 
                 if (info.Success)
                 {
-                    _lblXiaomiModel.Text = info.CommercialName ?? info.Product ?? "Xiaomi Dispositivo";
-                    _lblXiaomiChipset.Text = info.Chipset ?? "Qualcomm / MediaTek";
-                    _lblXiaomiBootloader.Text = info.IsUnlocked ? "DESBLOQUEADO" : "BLOQUEADO";
-                    _lblXiaomiBootloader.ForeColor = info.IsUnlocked ? ColorSuccess : ColorDanger;
-                    _lblXiaomiRom.Text = !string.IsNullOrEmpty(info.AntiRollback) ? $"ARB {info.AntiRollback}" : "Fastboot Mode";
-
                     SendXiaomiLog("[FASTBOOT] Leitura Xiaomi Fastboot concluida com sucesso!", ColorSuccess, true);
                 }
             }
@@ -1494,12 +1369,6 @@ namespace MasterUnlock
 
                 if (info.Success)
                 {
-                    _lblXiaomiModel.Text = info.CommercialName ?? info.DeviceModel ?? "Xiaomi Dispositivo";
-                    _lblXiaomiChipset.Text = info.Chipset ?? "Qualcomm / MediaTek";
-                    _lblXiaomiBootloader.Text = info.IsLocked ? "BLOQUEADO" : "DESBLOQUEADO";
-                    _lblXiaomiBootloader.ForeColor = info.IsLocked ? ColorDanger : ColorSuccess;
-                    _lblXiaomiRom.Text = $"{info.RomFamily ?? "HyperOS"} ({info.Region ?? info.DeviceRegion ?? "Global"})";
-
                     SendXiaomiLog("[SIDELOAD] Leitura Xiaomi Sideload / Recovery concluida com sucesso!", ColorSuccess, true);
                 }
             }
