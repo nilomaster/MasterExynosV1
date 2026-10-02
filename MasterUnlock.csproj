@@ -5,10 +5,14 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>MasterUnlock</AssemblyName>
+    <RootNamespace>MasterUnlock</RootNamespace>
     <Product>Master Unlock</Product>
     <Company>MasterDev</Company>
-	<ApplicationManifest>app.manifest</ApplicationManifest>
-    <Description>Master Unlock - Samsung Exynos Odin Mode FRP Remove Tool</Description>
+    <Title>Master Unlock</Title>
+    <AssemblyTitle>Master Unlock</AssemblyTitle>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Description>Master Unlock - Multi-Brand Mobile Repair and FRP Tool</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
