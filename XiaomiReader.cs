@@ -1579,7 +1579,202 @@ exit /b 0
         }
 
         // ============================================================
-        // 3. REBOOT HELPERS (FASTBOOT & SIDELOAD)
+        // 3. CONVERT FASTBOOT TO EDL 9008 (SOFTWARE TEST POINT)
+        // ============================================================
+        public static async Task<bool> ConvertFastbootToEdlAsync(Action<string, Color, bool> logger, CancellationToken ct = default)
+        {
+            Color cyan = Color.FromArgb(0, 210, 255);
+            Color yellow = Color.FromArgb(255, 196, 0);
+            Color white = Color.FromArgb(242, 247, 255);
+            Color green = Color.FromArgb(0, 230, 92);
+            Color red = Color.FromArgb(255, 52, 64);
+            Color muted = Color.FromArgb(145, 172, 204);
+
+            logger("--------------------------------------------------------------------------------", muted, true);
+            logger("[XIAOMI CONVERT FASTBOOT -> EDL 9008 (SOFTWARE TEST POINT)]", cyan, true);
+            logger("Iniciando procedimento de conversao de modo sem abrir o aparelho...", white, true);
+
+            string? fb = FindToolPath("fastboot");
+            if (string.IsNullOrEmpty(fb))
+            {
+                logger("[ERRO] Binario 'fastboot.exe' nao encontrado em tools\\platform-tools.", red, true);
+                return false;
+            }
+
+            // 1. Verify fastboot device
+            logger("Verificando dispositivo conectado em modo Fastboot... ", white, false);
+            var devRes = await RunProcessAsync(fb, "devices", 4000, ct);
+            string devOutput = (devRes.stdout + "\n" + devRes.stderr).Trim();
+
+            if (string.IsNullOrWhiteSpace(devOutput) || (!devOutput.Contains("fastboot", StringComparison.OrdinalIgnoreCase) && !devOutput.Contains("\t")))
+            {
+                logger("Nao encontrado!", red, true);
+
+                // Check if in Sideload/ADB
+                string? adb = FindToolPath("adb");
+                if (!string.IsNullOrEmpty(adb))
+                {
+                    var adbRes = await RunProcessAsync(adb, "devices", 2000, ct);
+                    if (adbRes.stdout.Contains("sideload", StringComparison.OrdinalIgnoreCase) ||
+                        adbRes.stdout.Contains("recovery", StringComparison.OrdinalIgnoreCase) ||
+                        adbRes.stdout.Contains("device", StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger("[ALERTA] Dispositivo detectado em modo ADB / Sideload.", yellow, true);
+                        logger("Tentando comando alternativo: adb reboot edl...", cyan, true);
+                        var adbEdl = await RunProcessAsync(adb, "reboot edl", 4000, ct);
+                        if (adbEdl.exitCode == 0)
+                        {
+                            logger("[SUCESSO] Comando 'adb reboot edl' enviado!", green, true);
+                            await MonitorForEdlPortAsync(logger, ct);
+                            return true;
+                        }
+                    }
+                }
+
+                logger("[FALHA] Nenhum dispositivo detectado em modo Fastboot.", red, true);
+                logger("-> Conecte o aparelho segurando [Volume Menos + Power] ate aparecer 'FASTBOOT'.", yellow, true);
+                PerformUsbDiagnosticReport(logger);
+                return false;
+            }
+
+            logger("Detectado!", green, true);
+
+            // Get product name and bootloader status
+            var getProd = await RunProcessAsync(fb, "getvar product", 2500, ct);
+            string prodText = (getProd.stdout + "\n" + getProd.stderr);
+            string prodName = "";
+            foreach (var l in prodText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (l.Contains("product:", StringComparison.OrdinalIgnoreCase))
+                {
+                    prodName = l.Split(':').Last().Trim();
+                    break;
+                }
+            }
+
+            var getUnl = await RunProcessAsync(fb, "getvar unlocked", 2500, ct);
+            string unlText = (getUnl.stdout + "\n" + getUnl.stderr);
+            string unlStatus = "";
+            foreach (var l in unlText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (l.Contains("unlocked:", StringComparison.OrdinalIgnoreCase))
+                {
+                    unlStatus = l.Split(':').Last().Trim();
+                    break;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(prodName))
+            {
+                string commercial = CodenameDb.TryGetValue(prodName, out var item) ? item.name : prodName;
+                string chipset = CodenameDb.TryGetValue(prodName, out var item2) ? item2.chipset : "Qualcomm Snapdragon";
+                logger($"[DISPOSITIVO] Modelo: {commercial} ({prodName}) | Plataforma: {chipset}", cyan, true);
+            }
+
+            if (!string.IsNullOrEmpty(unlStatus))
+            {
+                bool isUnl = string.Equals(unlStatus, "yes", StringComparison.OrdinalIgnoreCase) || string.Equals(unlStatus, "true", StringComparison.OrdinalIgnoreCase);
+                logger($"[BOOTLOADER] Status: {(isUnl ? "DESBLOQUEADO" : "BLOQUEADO")}", isUnl ? green : yellow, true);
+            }
+
+            // 2. Try EDL command sequence
+            string[] edlCommands = new string[]
+            {
+                "oem edl",
+                "reboot-edl",
+                "oem reboot-edl",
+                "reboot edl",
+                "oem reboot edl"
+            };
+
+            bool commandAccepted = false;
+
+            foreach (var cmd in edlCommands)
+            {
+                logger($"Enviando comando: fastboot {cmd}...", cyan, true);
+                var res = await RunProcessAsync(fb, cmd, 4000, ct);
+                string outCombined = (res.stdout + "\n" + res.stderr).Trim();
+
+                if (res.exitCode == 0 || outCombined.Contains("OKAY", StringComparison.OrdinalIgnoreCase) || outCombined.Contains("rebooting", StringComparison.OrdinalIgnoreCase))
+                {
+                    logger($"[OK] Comando 'fastboot {cmd}' aceito pelo bootloader!", green, true);
+                    commandAccepted = true;
+                    break;
+                }
+                else
+                {
+                    if (outCombined.Contains("Device is locked", StringComparison.OrdinalIgnoreCase) ||
+                        outCombined.Contains("locked", StringComparison.OrdinalIgnoreCase) ||
+                        outCombined.Contains("not allowed", StringComparison.OrdinalIgnoreCase) ||
+                        outCombined.Contains("disabled", StringComparison.OrdinalIgnoreCase) ||
+                        outCombined.Contains("unknown command", StringComparison.OrdinalIgnoreCase) ||
+                        outCombined.Contains("FAILED", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string firstLine = outCombined.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? outCombined;
+                        logger($" -> Resposta: {firstLine}", muted, true);
+                    }
+                }
+            }
+
+            // 3. Monitor Windows COM Ports & USB for Qualcomm 9008
+            logger("Aguardando reinicializacao do hardware e deteccao da porta EDL (Qualcomm HS-USB QDLoader 9008)...", white, true);
+            bool edlFound = await MonitorForEdlPortAsync(logger, ct);
+
+            if (edlFound)
+            {
+                logger("--------------------------------------------------------------------------------", muted, true);
+                logger("[STATUS]: SUCESSO! Dispositivo conectado com exito em modo EDL 9008!", green, true);
+                logger("-> O aparelho esta pronto para procedimentos de gravacao de firmware / reparo via Sahara.", cyan, true);
+                logger("--------------------------------------------------------------------------------", muted, true);
+                return true;
+            }
+            else if (commandAccepted)
+            {
+                logger("[INFO] Comando de conversao executado. Se a tela desligou, verifique no Gerenciador de Dispositivos se a porta Qualcomm 9008 foi criada.", green, true);
+                return true;
+            }
+            else
+            {
+                logger("--------------------------------------------------------------------------------", muted, true);
+                logger("[RESULTADO]: O bootloader recusou a conversao direta para EDL via software.", red, true);
+                logger("[DIAGNOSTICO TECNICO]:", yellow, true);
+                logger(" 1. Em aparelhos Xiaomi recentes com Bootloader Bloqueado, a Xiaomi restringe o comando OEM EDL.", white, true);
+                logger(" 2. Se a tela do aparelho desligou mas o Windows nao reconheceu, instale o driver Qualcomm QDLoader 9008.", white, true);
+                logger(" 3. Para modelos bloqueados pela seguranca de fabrica, utilize o Test Point fisico ou cabo Deep Flash EDL.", cyan, true);
+                logger("--------------------------------------------------------------------------------", muted, true);
+                return false;
+            }
+        }
+
+        public static async Task<bool> MonitorForEdlPortAsync(Action<string, Color, bool> logger, CancellationToken ct = default, int maxWaitSeconds = 10)
+        {
+            Color green = Color.FromArgb(0, 230, 92);
+            Color muted = Color.FromArgb(145, 172, 204);
+
+            var stopwatch = Stopwatch.StartNew();
+            while (stopwatch.Elapsed.TotalSeconds < maxWaitSeconds && !ct.IsCancellationRequested)
+            {
+                var usbDevs = GetUsbDiagnostics();
+                var qcom = usbDevs.FirstOrDefault(d =>
+                    d.HardwareId.Contains("VID_05C6&PID_9008", StringComparison.OrdinalIgnoreCase) ||
+                    d.DeviceDesc.Contains("9008", StringComparison.OrdinalIgnoreCase) ||
+                    d.DeviceDesc.Contains("QDLoader", StringComparison.OrdinalIgnoreCase) ||
+                    d.Service.Contains("qcusbser", StringComparison.OrdinalIgnoreCase));
+
+                if (qcom != null)
+                {
+                    logger($"[DETECCAO EM TEMPO REAL] Porta EDL Encontrada: {qcom.DeviceDesc}!", green, true);
+                    logger($" -> Hardware ID: {qcom.HardwareId}", muted, true);
+                    return true;
+                }
+
+                await Task.Delay(800, ct);
+            }
+            return false;
+        }
+
+        // ============================================================
+        // 4. REBOOT HELPERS (FASTBOOT & SIDELOAD)
         // ============================================================
         public static async Task<bool> RebootDeviceAsync(string mode, string target, Action<string, Color, bool> logger, CancellationToken ct = default)
         {
