@@ -131,7 +131,7 @@ dotnet build -c Release
 dotnet run
 ```
 
-Or open `SamsungExynos.slnx` in Visual Studio, restore NuGet packages, and press **F5**.
+Or open `MasterUnlock.slnx` in Visual Studio, restore NuGet packages, and press **F5**.
 
 ## 📦 Payload Package (exynos.zip)
 
@@ -195,8 +195,8 @@ The app communicates with the device over **UART serial (115200 baud)** using AT
 ## 🗂️ Repository Structure
 
 ```
-├── SamsungExynos.slnx              # Visual Studio solution
-├── SamsungExynos.csproj            # .NET 8.0 Windows Forms project
+├── MasterUnlock.slnx               # Visual Studio solution
+├── MasterUnlock.csproj             # .NET 8.0 Windows Forms project
 ├── Program.cs                      # Application entry point
 ├── Form1.cs                        # Main UI logic & event handlers
 ├── Form1.Designer.cs               # Designer-generated UI code

@@ -56,8 +56,10 @@ namespace MasterUnlock
         private Label _lblSidebarLivePort = null!;
         private Panel _mainContentContainer = null!;
 
-        // 4 Dedicated Views
+        // 6 Dedicated Views
         private Panel _viewHome = null!;
+        private Panel _viewSamsung = null!;
+        private Panel _viewXiaomi = null!;
         private Panel _viewReadInfo = null!;
         private Panel _viewFrpExynos = null!;
         private Panel _viewAbout = null!;
@@ -65,6 +67,8 @@ namespace MasterUnlock
         // Sidebar Navigation Buttons
         private List<CyberNavButton> _navButtons = new List<CyberNavButton>();
         private CyberNavButton _btnNavHome = null!;
+        private CyberNavButton _btnNavSamsung = null!;
+        private CyberNavButton _btnNavXiaomi = null!;
         private CyberNavButton _btnNavInfo = null!;
         private CyberNavButton _btnNavFrpExynos = null!;
         private CyberNavButton _btnNavAbout = null!;
@@ -74,14 +78,35 @@ namespace MasterUnlock
         private Label _lblHomeMtpStatus = null!;
         private Label _lblHomeEngineStatus = null!;
 
-        // View 2: Read Info Controls
+        // View 2: Samsung Special Tool Controls
+        private CyberButton _btnSamsungReadInfo = null!;
+        private CyberButton _btnSamsungFactoryReset = null!;
+        private CyberButton _btnSamsungRebootDownload = null!;
+        private CyberButton _btnSamsungRemoveFrp = null!;
+        private CyberButton _btnSamsungNewFeature = null!;
+        private CyberButton _btnSamsungLogExport = null!;
+        private CyberButton _btnSamsungLogClear = null!;
+        private RichTextBox _txtSamsungLog = null!;
+        private SamsungMtpDeviceInfo? _lastSamsungInfo;
+
+        // View 3: Xiaomi Special Tool Controls
+        private CyberButton _btnXiaomiFastboot = null!;
+        private CyberButton _btnXiaomiSideload = null!;
+        private CyberButton _btnXiaomiFastbootToEdl = null!;
+        private CyberButton _btnXiaomiInstallDrivers = null!;
+        private CyberButton _btnXiaomiUsbDiag = null!;
+        private CyberButton _btnXiaomiLogExport = null!;
+        private CyberButton _btnXiaomiLogClear = null!;
+        private RichTextBox _txtXiaomiLog = null!;
+        private XiaomiFastbootDeviceInfo? _lastXiaomiFastbootInfo;
+        private XiaomiSideloadDeviceInfo? _lastXiaomiSideloadInfo;
+
+        // View 3: Read Info Controls
         private string _selectedBrand = "Samsung";
         private List<CyberBrandTabButton> _brandButtons = new List<CyberBrandTabButton>();
         private FlowLayoutPanel _pnlMtpToolbar = null!;
         private Label _lblLogT = null!;
         private CyberButton _btnMtpRead = null!;
-        private CyberButton _btnXiaomiFastboot = null!;
-        private CyberButton _btnXiaomiSideload = null!;
         private CyberButton _btnInstallDrivers = null!;
         private CyberButton _btnMtpExport = null!;
         private CyberButton _btnMtpClear = null!;
@@ -303,8 +328,10 @@ namespace MasterUnlock
             _topHeaderPanel.SendToBack();
             _mainContentContainer.BringToFront();
 
-            // 5. Initialize All 4 Dedicated Views
+            // 5. Initialize All 6 Dedicated Views
             InitViewHome();
+            InitViewSamsung();
+            InitViewXiaomi();
             InitViewReadInfo();
             InitViewFrpExynos();
             InitViewAbout();
@@ -355,40 +382,54 @@ namespace MasterUnlock
             };
             _sidebarPanel.Controls.Add(pnlSep);
 
-            // 4 Navigation Buttons (Clean Vertical Positions)
+            // 6 Navigation Buttons (Clean Vertical Positions)
             _btnNavHome = new CyberNavButton("Inicio", CyberNavIcon.Home)
             {
-                Location = new Point(12, 106),
-                Size = new Size(206, 44),
+                Location = new Point(12, 104),
+                Size = new Size(206, 40),
                 IsActive = true
             };
 
-            _btnNavInfo = new CyberNavButton("Carregar Informacoes", CyberNavIcon.Smartphone)
+            _btnNavSamsung = new CyberNavButton("Samsung Tool", CyberNavIcon.Smartphone)
             {
-                Location = new Point(12, 158),
-                Size = new Size(206, 44)
+                Location = new Point(12, 148),
+                Size = new Size(206, 40)
+            };
+
+            _btnNavXiaomi = new CyberNavButton("Xiaomi Tool", CyberNavIcon.Flash)
+            {
+                Location = new Point(12, 192),
+                Size = new Size(206, 40)
             };
 
             _btnNavFrpExynos = new CyberNavButton("FRP Samsung Exynos", CyberNavIcon.Lock)
             {
-                Location = new Point(12, 210),
-                Size = new Size(206, 44)
+                Location = new Point(12, 236),
+                Size = new Size(206, 40)
+            };
+
+            _btnNavInfo = new CyberNavButton("Carregar Informacoes", CyberNavIcon.Smartphone)
+            {
+                Location = new Point(12, 280),
+                Size = new Size(206, 40)
             };
 
             _btnNavAbout = new CyberNavButton("Sobre", CyberNavIcon.Info)
             {
-                Location = new Point(12, 262),
-                Size = new Size(206, 44)
+                Location = new Point(12, 324),
+                Size = new Size(206, 40)
             };
 
-            _navButtons = new List<CyberNavButton> { _btnNavHome, _btnNavInfo, _btnNavFrpExynos, _btnNavAbout };
+            _navButtons = new List<CyberNavButton> { _btnNavHome, _btnNavSamsung, _btnNavXiaomi, _btnNavFrpExynos, _btnNavInfo, _btnNavAbout };
 
             _btnNavHome.Click += (_, _) => { SetActiveNav(_btnNavHome); SwitchToView("Home"); };
-            _btnNavInfo.Click += (_, _) => { SetActiveNav(_btnNavInfo); SwitchToView("ReadInfo"); };
+            _btnNavSamsung.Click += (_, _) => { SetActiveNav(_btnNavSamsung); SwitchToView("Samsung"); };
+            _btnNavXiaomi.Click += (_, _) => { SetActiveNav(_btnNavXiaomi); SwitchToView("Xiaomi"); };
             _btnNavFrpExynos.Click += (_, _) => { SetActiveNav(_btnNavFrpExynos); SwitchToView("FrpExynos"); };
+            _btnNavInfo.Click += (_, _) => { SetActiveNav(_btnNavInfo); SwitchToView("ReadInfo"); };
             _btnNavAbout.Click += (_, _) => { SetActiveNav(_btnNavAbout); SwitchToView("About"); };
 
-            _sidebarPanel.Controls.AddRange(new Control[] { _btnNavHome, _btnNavInfo, _btnNavFrpExynos, _btnNavAbout });
+            _sidebarPanel.Controls.AddRange(new Control[] { _btnNavHome, _btnNavSamsung, _btnNavXiaomi, _btnNavFrpExynos, _btnNavInfo, _btnNavAbout });
 
             // Bottom Version Tag & Live Port Indicator
             var lblSidebarVersion = new Label
@@ -521,6 +562,8 @@ namespace MasterUnlock
         private void SwitchToView(string viewName)
         {
             _viewHome.Visible = (viewName == "Home");
+            _viewSamsung.Visible = (viewName == "Samsung");
+            _viewXiaomi.Visible = (viewName == "Xiaomi");
             _viewReadInfo.Visible = (viewName == "ReadInfo");
             _viewFrpExynos.Visible = (viewName == "FrpExynos");
             _viewAbout.Visible = (viewName == "About");
@@ -531,6 +574,14 @@ namespace MasterUnlock
                     _viewHome.BringToFront();
                     _lblHeaderBreadcrumb.Text = "MASTER UNLOCK  •  INICIO";
                     UpdateHomeStatus();
+                    break;
+                case "Samsung":
+                    _viewSamsung.BringToFront();
+                    _lblHeaderBreadcrumb.Text = "MASTER UNLOCK  •  SAMSUNG TOOL (MTP / DOWNLOAD / FACTORY RESET)";
+                    break;
+                case "Xiaomi":
+                    _viewXiaomi.BringToFront();
+                    _lblHeaderBreadcrumb.Text = "MASTER UNLOCK  •  XIAOMI SPECIAL TOOL (FASTBOOT / SIDELOAD / EDL)";
                     break;
                 case "ReadInfo":
                     _viewReadInfo.BringToFront();
@@ -811,7 +862,470 @@ namespace MasterUnlock
         }
 
         // ============================================================
-        // VIEW 2: CARREGAR INFORMACOES (MTP / FASTBOOT / SIDELOAD MULTI-BRAND READER)
+        // VIEW 2: SAMSUNG SPECIAL TOOL (MTP / DOWNLOAD / FACTORY RESET)
+        // ============================================================
+        private void InitViewSamsung()
+        {
+            _viewSamsung = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorBgApp,
+                Padding = new Padding(0)
+            };
+            _mainContentContainer.Controls.Add(_viewSamsung);
+
+            // 1. Top Hero Card
+            var cardHeroSamsung = new CyberCardPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 84,
+                BackColor = ColorBgCard,
+                BorderColor = ColorBorderDark,
+                Padding = new Padding(16, 10, 16, 10)
+            };
+
+            var lblSamsungTitle = new Label
+            {
+                Text = "Samsung Galaxy Special Suite Pro",
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
+                ForeColor = ColorCyanGlow,
+                Dock = DockStyle.Top,
+                Height = 26
+            };
+
+            var lblSamsungSub = new Label
+            {
+                Text = "Centro avancado de diagnostico, reparo e operacoes MTP / Download / Factory Reset para aparelhos Samsung Galaxy.\nSuporte a leitura aprofundada via MTP/Modem, Hard Reset (Wipe Data) e troca automatica para Download Mode.",
+                Font = new Font("Segoe UI", 9f),
+                ForeColor = ColorTextMuted,
+                Dock = DockStyle.Fill
+            };
+            cardHeroSamsung.Controls.Add(lblSamsungSub);
+            cardHeroSamsung.Controls.Add(lblSamsungTitle);
+
+            var spacerS1 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
+
+            // 2. Action Toolbar: Funcoes Principais Samsung
+            var pnlSamsungToolbar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = ColorBgApp,
+                Margin = new Padding(0)
+            };
+
+            // 1. Carregar Informacoes
+            _btnSamsungReadInfo = new CyberButton
+            {
+                Text = "  Carregar Informacoes",
+                Size = new Size(185, 36),
+                BackColorPrimary = Color.FromArgb(0, 90, 180),
+                BackColorSecondary = Color.FromArgb(0, 140, 255),
+                BorderColor = ColorCyanGlow,
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Smartphone,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnSamsungReadInfo.Click += BtnSamsungReadInfo_Click;
+
+            // 2. Resete de Fabrica
+            _btnSamsungFactoryReset = new CyberButton
+            {
+                Text = "  Resete de Fabrica",
+                Size = new Size(160, 36),
+                BackColorPrimary = Color.FromArgb(170, 75, 0),
+                BackColorSecondary = Color.FromArgb(225, 110, 0),
+                BorderColor = Color.FromArgb(255, 170, 0),
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Trash,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnSamsungFactoryReset.Click += BtnSamsungFactoryReset_Click;
+
+            // 3. Acessar o Download
+            _btnSamsungRebootDownload = new CyberButton
+            {
+                Text = "  Acessar o download",
+                Size = new Size(170, 36),
+                BackColorPrimary = Color.FromArgb(115, 35, 175),
+                BackColorSecondary = Color.FromArgb(155, 60, 220),
+                BorderColor = Color.FromArgb(190, 105, 255),
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Flash,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnSamsungRebootDownload.Click += BtnSamsungRebootDownload_Click;
+
+            // 4. Remove FRP (em breve)
+            _btnSamsungRemoveFrp = new CyberButton
+            {
+                Text = "  Remove FRP (em breve)",
+                Size = new Size(190, 36),
+                BackColorPrimary = ColorBgCard,
+                BackColorSecondary = ColorBgInput,
+                BorderColor = ColorBorderDark,
+                BorderHoverColor = ColorCyanGlow,
+                ButtonIcon = CyberButtonIcon.Lock,
+                TextFont = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnSamsungRemoveFrp.Click += BtnSamsungRemoveFrp_Click;
+
+            // 5. Nova Funcao (em breve)
+            _btnSamsungNewFeature = new CyberButton
+            {
+                Text = "  Nova funcao (em breve)",
+                Size = new Size(190, 36),
+                BackColorPrimary = ColorBgCard,
+                BackColorSecondary = ColorBgInput,
+                BorderColor = ColorBorderDark,
+                BorderHoverColor = Color.FromArgb(190, 105, 255),
+                ButtonIcon = CyberButtonIcon.Recovery,
+                TextFont = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnSamsungNewFeature.Click += BtnSamsungNewFeature_Click;
+
+            // 6. Salvar Log
+            _btnSamsungLogExport = new CyberButton
+            {
+                Text = "  Salvar Log",
+                Size = new Size(115, 36),
+                BackColorPrimary = ColorBgCard,
+                BackColorSecondary = ColorBgInput,
+                BorderColor = ColorBorderDark,
+                BorderHoverColor = ColorSuccess,
+                ButtonIcon = CyberButtonIcon.Save,
+                TextFont = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnSamsungLogExport.Click += (_, _) => ExportSamsungReport();
+
+            // 7. Limpar
+            _btnSamsungLogClear = new CyberButton
+            {
+                Text = "  Limpar",
+                Size = new Size(90, 36),
+                BackColorPrimary = ColorBgCard,
+                BackColorSecondary = ColorBgInput,
+                BorderColor = ColorBorderDark,
+                BorderHoverColor = ColorDanger,
+                ButtonIcon = CyberButtonIcon.Trash,
+                TextFont = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnSamsungLogClear.Click += (_, _) => _txtSamsungLog.Clear();
+
+            pnlSamsungToolbar.Controls.AddRange(new Control[]
+            {
+                _btnSamsungReadInfo,
+                _btnSamsungFactoryReset,
+                _btnSamsungRebootDownload,
+                _btnSamsungRemoveFrp,
+                _btnSamsungNewFeature,
+                _btnSamsungLogExport,
+                _btnSamsungLogClear
+            });
+
+            var spacerS2 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
+
+            // 3. Body: Diagnostic & Operations Terminal Log
+            var pnlSamsungBody = new Panel { Dock = DockStyle.Fill, BackColor = ColorBgApp };
+
+            var cardSamsungLog = new CyberCardPanel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorBgCard,
+                BorderColor = ColorBorderDark,
+                Padding = new Padding(1)
+            };
+
+            var pnlSLogHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 32,
+                BackColor = ColorBgHeader,
+                Padding = new Padding(12, 0, 12, 0)
+            };
+
+            var lblSLogTitle = new Label
+            {
+                Text = "TERMINAL DE OPERACOES E DIAGNOSTICO - SAMSUNG TOOL",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = ColorTextWhite,
+                Dock = DockStyle.Left,
+                Width = 520,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlSLogHeader.Controls.Add(lblSLogTitle);
+            cardSamsungLog.Controls.Add(pnlSLogHeader);
+
+            _txtSamsungLog = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorBgTerminal,
+                ForeColor = ColorTextWhite,
+                Font = new Font("Consolas", 9.5f, FontStyle.Regular),
+                ReadOnly = true,
+                BorderStyle = BorderStyle.None,
+                ScrollBars = RichTextBoxScrollBars.Vertical,
+                WordWrap = true
+            };
+            cardSamsungLog.Controls.Add(_txtSamsungLog);
+            _txtSamsungLog.BringToFront();
+
+            pnlSamsungBody.Controls.Add(cardSamsungLog);
+            cardSamsungLog.BringToFront();
+
+            // WinForms docking order: add Fill first, then Top items from bottom to top
+            _viewSamsung.Controls.Add(pnlSamsungBody);
+            _viewSamsung.Controls.Add(spacerS2);
+            _viewSamsung.Controls.Add(pnlSamsungToolbar);
+            _viewSamsung.Controls.Add(spacerS1);
+            _viewSamsung.Controls.Add(cardHeroSamsung);
+
+            cardHeroSamsung.SendToBack();
+            spacerS1.SendToBack();
+            pnlSamsungToolbar.SendToBack();
+            spacerS2.SendToBack();
+            pnlSamsungBody.BringToFront();
+        }
+
+        // ============================================================
+        // VIEW 3: XIAOMI SPECIAL TOOL (FASTBOOT / SIDELOAD / EDL 9008)
+        // ============================================================
+        private void InitViewXiaomi()
+        {
+            _viewXiaomi = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorBgApp,
+                Padding = new Padding(0)
+            };
+            _mainContentContainer.Controls.Add(_viewXiaomi);
+
+            // 1. Top Hero Card
+            var cardHeroXiaomi = new CyberCardPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 84,
+                BackColor = ColorBgCard,
+                BorderColor = ColorBorderDark,
+                Padding = new Padding(16, 10, 16, 10)
+            };
+
+            var lblXiaomiTitle = new Label
+            {
+                Text = "Xiaomi & Redmi Special Suite Pro",
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(255, 170, 0),
+                Dock = DockStyle.Top,
+                Height = 26
+            };
+
+            var lblXiaomiSub = new Label
+            {
+                Text = "Centro avancado de diagnostico e reparo para Xiaomi / Redmi / POCO.\nLeitura de metadados em Fastboot e Sideload (MiAssistant), conversao direta para EDL 9008 (Software Test Point) e instalador de drivers.",
+                Font = new Font("Segoe UI", 9f),
+                ForeColor = ColorTextMuted,
+                Dock = DockStyle.Fill
+            };
+            cardHeroXiaomi.Controls.Add(lblXiaomiSub);
+            cardHeroXiaomi.Controls.Add(lblXiaomiTitle);
+
+            var spacerX1 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
+
+            // 2. Action Toolbar: Operacoes Principais e Logs
+            var pnlXiaomiToolbar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = ColorBgApp,
+                Margin = new Padding(0)
+            };
+
+            _btnXiaomiFastboot = new CyberButton
+            {
+                Text = "  Ler Info (Fastboot)",
+                Size = new Size(170, 36),
+                BackColorPrimary = Color.FromArgb(190, 95, 0),
+                BackColorSecondary = Color.FromArgb(240, 130, 0),
+                BorderColor = Color.FromArgb(255, 180, 0),
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Flash,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnXiaomiFastboot.Click += BtnXiaomiFastboot_Click;
+
+            _btnXiaomiSideload = new CyberButton
+            {
+                Text = "  Ler Info (Sideload)",
+                Size = new Size(170, 36),
+                BackColorPrimary = Color.FromArgb(115, 35, 175),
+                BackColorSecondary = Color.FromArgb(155, 60, 220),
+                BorderColor = Color.FromArgb(190, 105, 255),
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Recovery,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnXiaomiSideload.Click += BtnXiaomiSideload_Click;
+
+            _btnXiaomiFastbootToEdl = new CyberButton
+            {
+                Text = "  Convert Fastboot / EDL",
+                Size = new Size(195, 36),
+                BackColorPrimary = Color.FromArgb(170, 25, 45),
+                BackColorSecondary = Color.FromArgb(235, 45, 75),
+                BorderColor = Color.FromArgb(255, 90, 120),
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Play,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnXiaomiFastbootToEdl.Click += BtnXiaomiFastbootToEdl_Click;
+
+            _btnXiaomiInstallDrivers = new CyberButton
+            {
+                Text = "  Instalar Drivers ADB",
+                Size = new Size(170, 36),
+                BackColorPrimary = Color.FromArgb(12, 115, 95),
+                BackColorSecondary = Color.FromArgb(20, 165, 135),
+                BorderColor = Color.FromArgb(40, 225, 185),
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Recovery,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnXiaomiInstallDrivers.Click += BtnInstallDrivers_Click;
+
+            _btnXiaomiUsbDiag = new CyberButton
+            {
+                Text = "  Diagnostico USB",
+                Size = new Size(145, 36),
+                BackColorPrimary = Color.FromArgb(0, 70, 150),
+                BackColorSecondary = Color.FromArgb(0, 115, 220),
+                BorderColor = ColorCyanGlow,
+                BorderHoverColor = Color.White,
+                ButtonIcon = CyberButtonIcon.Smartphone,
+                TextFont = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnXiaomiUsbDiag.Click += BtnXiaomiUsbDiag_Click;
+
+            _btnXiaomiLogExport = new CyberButton
+            {
+                Text = "  Salvar Log",
+                Size = new Size(115, 36),
+                BackColorPrimary = ColorBgCard,
+                BackColorSecondary = ColorBgInput,
+                BorderColor = ColorBorderDark,
+                BorderHoverColor = ColorSuccess,
+                ButtonIcon = CyberButtonIcon.Save,
+                TextFont = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnXiaomiLogExport.Click += (_, _) => ExportXiaomiReport();
+
+            _btnXiaomiLogClear = new CyberButton
+            {
+                Text = "  Limpar",
+                Size = new Size(90, 36),
+                BackColorPrimary = ColorBgCard,
+                BackColorSecondary = ColorBgInput,
+                BorderColor = ColorBorderDark,
+                BorderHoverColor = ColorDanger,
+                ButtonIcon = CyberButtonIcon.Trash,
+                TextFont = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnXiaomiLogClear.Click += (_, _) => _txtXiaomiLog.Clear();
+
+            pnlXiaomiToolbar.Controls.AddRange(new Control[]
+            {
+                _btnXiaomiFastboot,
+                _btnXiaomiSideload,
+                _btnXiaomiFastbootToEdl,
+                _btnXiaomiInstallDrivers,
+                _btnXiaomiUsbDiag,
+                _btnXiaomiLogExport,
+                _btnXiaomiLogClear
+            });
+
+            var spacerX2 = new Panel { Dock = DockStyle.Top, Height = 8, BackColor = ColorBgApp };
+
+            // 3. Body: Diagnostic & Operations Terminal Log
+            var pnlXiaomiBody = new Panel { Dock = DockStyle.Fill, BackColor = ColorBgApp };
+
+            var cardXiaomiLog = new CyberCardPanel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorBgCard,
+                BorderColor = ColorBorderDark,
+                Padding = new Padding(1)
+            };
+
+            var pnlXLogHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 32,
+                BackColor = ColorBgHeader,
+                Padding = new Padding(12, 0, 12, 0)
+            };
+
+            var lblXLogTitle = new Label
+            {
+                Text = "TERMINAL DE OPERACOES E DIAGNOSTICO - XIAOMI SUITE",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = ColorTextWhite,
+                Dock = DockStyle.Left,
+                Width = 520,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlXLogHeader.Controls.Add(lblXLogTitle);
+            cardXiaomiLog.Controls.Add(pnlXLogHeader);
+
+            _txtXiaomiLog = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorBgTerminal,
+                ForeColor = ColorTextWhite,
+                Font = new Font("Consolas", 9.5f, FontStyle.Regular),
+                ReadOnly = true,
+                BorderStyle = BorderStyle.None,
+                ScrollBars = RichTextBoxScrollBars.Vertical,
+                WordWrap = true
+            };
+            cardXiaomiLog.Controls.Add(_txtXiaomiLog);
+            _txtXiaomiLog.BringToFront();
+
+            pnlXiaomiBody.Controls.Add(cardXiaomiLog);
+            cardXiaomiLog.BringToFront();
+
+            // WinForms docking order: add Fill first, then Top items from bottom to top
+            _viewXiaomi.Controls.Add(pnlXiaomiBody);
+            _viewXiaomi.Controls.Add(spacerX2);
+            _viewXiaomi.Controls.Add(pnlXiaomiToolbar);
+            _viewXiaomi.Controls.Add(spacerX1);
+            _viewXiaomi.Controls.Add(cardHeroXiaomi);
+
+            cardHeroXiaomi.SendToBack();
+            spacerX1.SendToBack();
+            pnlXiaomiToolbar.SendToBack();
+            spacerX2.SendToBack();
+            pnlXiaomiBody.BringToFront();
+        }
+
+        // ============================================================
+        // VIEW 3: CARREGAR INFORMACOES (MTP / UNIVERSAL MULTI-BRAND READER)
         // ============================================================
         private void InitViewReadInfo()
         {
@@ -880,34 +1394,6 @@ namespace MasterUnlock
                 Margin = new Padding(0, 0, 8, 0)
             };
             _btnMtpRead.Click += BtnMtpRead_Click;
-
-            _btnXiaomiFastboot = new CyberButton
-            {
-                Text = "  Ler Fastboot (Xiaomi)",
-                Size = new Size(195, 36),
-                BackColorPrimary = Color.FromArgb(190, 95, 0),
-                BackColorSecondary = Color.FromArgb(240, 130, 0),
-                BorderColor = Color.FromArgb(255, 180, 0),
-                BorderHoverColor = Color.White,
-                ButtonIcon = CyberButtonIcon.Flash,
-                TextFont = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 8, 0)
-            };
-            _btnXiaomiFastboot.Click += BtnXiaomiFastboot_Click;
-
-            _btnXiaomiSideload = new CyberButton
-            {
-                Text = "  Ler Sideload (Recovery)",
-                Size = new Size(205, 36),
-                BackColorPrimary = Color.FromArgb(115, 35, 175),
-                BackColorSecondary = Color.FromArgb(155, 60, 220),
-                BorderColor = Color.FromArgb(190, 105, 255),
-                BorderHoverColor = Color.White,
-                ButtonIcon = CyberButtonIcon.Recovery,
-                TextFont = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 8, 0)
-            };
-            _btnXiaomiSideload.Click += BtnXiaomiSideload_Click;
 
             _btnInstallDrivers = new CyberButton
             {
@@ -1025,34 +1511,33 @@ namespace MasterUnlock
             _pnlMtpToolbar.SuspendLayout();
             _pnlMtpToolbar.Controls.Clear();
 
-            if (brand.Equals("Xiaomi", StringComparison.OrdinalIgnoreCase))
+            _pnlMtpToolbar.Controls.Add(_btnMtpRead);
+            _pnlMtpToolbar.Controls.Add(_btnInstallDrivers);
+            _pnlMtpToolbar.Controls.Add(_btnMtpExport);
+            _pnlMtpToolbar.Controls.Add(_btnMtpClear);
+
+            if (_lblLogT != null)
             {
-                _pnlMtpToolbar.Controls.Add(_btnXiaomiFastboot);
-                _pnlMtpToolbar.Controls.Add(_btnXiaomiSideload);
-                _pnlMtpToolbar.Controls.Add(_btnInstallDrivers);
-                _pnlMtpToolbar.Controls.Add(_btnMtpRead);
-                _pnlMtpToolbar.Controls.Add(_btnMtpExport);
-                _pnlMtpToolbar.Controls.Add(_btnMtpClear);
-                if (_lblLogT != null) _lblLogT.Text = "TERMINAL DE DIAGNOSTICO - XIAOMI (FASTBOOT / SIDELOAD / MTP)";
-            }
-            else if (brand.Equals("Samsung", StringComparison.OrdinalIgnoreCase))
-            {
-                _pnlMtpToolbar.Controls.Add(_btnMtpRead);
-                _pnlMtpToolbar.Controls.Add(_btnMtpExport);
-                _pnlMtpToolbar.Controls.Add(_btnMtpClear);
-                if (_lblLogT != null) _lblLogT.Text = "TERMINAL DE DIAGNOSTICO - SAMSUNG MTP";
-            }
-            else
-            {
-                _pnlMtpToolbar.Controls.Add(_btnMtpRead);
-                _pnlMtpToolbar.Controls.Add(_btnXiaomiFastboot);
-                _pnlMtpToolbar.Controls.Add(_btnInstallDrivers);
-                _pnlMtpToolbar.Controls.Add(_btnMtpExport);
-                _pnlMtpToolbar.Controls.Add(_btnMtpClear);
-                if (_lblLogT != null) _lblLogT.Text = $"TERMINAL DE DIAGNOSTICO - {brand.ToUpper()} (MTP / FASTBOOT)";
+                _lblLogT.Text = $"TERMINAL DE DIAGNOSTICO - {brand.ToUpper()} (MTP / UNIVERSAL)";
             }
 
             _pnlMtpToolbar.ResumeLayout(true);
+        }
+
+        public void SendXiaomiLog(string text, Color color, bool breakline)
+        {
+            if (_txtXiaomiLog == null || _txtXiaomiLog.IsDisposed) return;
+            Action act = () =>
+            {
+                _txtXiaomiLog.SelectionStart = _txtXiaomiLog.TextLength;
+                _txtXiaomiLog.SelectionLength = 0;
+                _txtXiaomiLog.SelectionColor = color;
+                _txtXiaomiLog.AppendText(text);
+                if (breakline) _txtXiaomiLog.AppendText(Environment.NewLine);
+                _txtXiaomiLog.ScrollToCaret();
+            };
+            if (_txtXiaomiLog.InvokeRequired) _txtXiaomiLog.BeginInvoke(act);
+            else act();
         }
 
         private async void BtnInstallDrivers_Click(object? sender, EventArgs e)
@@ -1061,10 +1546,12 @@ namespace MasterUnlock
 
             var cts = ResetStop();
             SetBusy(true);
-            _btnInstallDrivers.Enabled = false;
+            if (_btnInstallDrivers != null) _btnInstallDrivers.Enabled = false;
+            if (_btnXiaomiInstallDrivers != null) _btnXiaomiInstallDrivers.Enabled = false;
 
             Action<string, Color, bool> logger = (msg, col, breakline) =>
             {
+                SendXiaomiLog(msg, col, breakline);
                 SendMtpLog(msg, col, breakline);
                 SendLog(msg, col, breakline);
             };
@@ -1075,11 +1562,12 @@ namespace MasterUnlock
             }
             catch (Exception ex)
             {
-                SendMtpLog($"[Erro Drivers] {ex.Message}", ColorDanger, true);
+                logger($"[Erro Drivers] {ex.Message}", ColorDanger, true);
             }
             finally
             {
-                _btnInstallDrivers.Enabled = true;
+                if (_btnInstallDrivers != null) _btnInstallDrivers.Enabled = true;
+                if (_btnXiaomiInstallDrivers != null) _btnXiaomiInstallDrivers.Enabled = true;
                 SetBusy(false);
             }
         }
@@ -1094,6 +1582,7 @@ namespace MasterUnlock
 
             Action<string, Color, bool> logger = (msg, col, breakline) =>
             {
+                SendXiaomiLog(msg, col, breakline);
                 SendMtpLog(msg, col, breakline);
                 SendLog(msg, col, breakline);
             };
@@ -1101,14 +1590,16 @@ namespace MasterUnlock
             try
             {
                 var info = await XiaomiReader.ReadFastbootInfoAsync(logger, cts.Token);
+                _lastXiaomiFastbootInfo = info;
+
                 if (info.Success)
                 {
-                    SendMtpLog("[FASTBOOT] Leitura Xiaomi Fastboot concluida com sucesso!", ColorSuccess, true);
+                    SendXiaomiLog("[FASTBOOT] Leitura Xiaomi Fastboot concluida com sucesso!", ColorSuccess, true);
                 }
             }
             catch (Exception ex)
             {
-                SendMtpLog($"[Erro Fastboot] {ex.Message}", ColorDanger, true);
+                SendXiaomiLog($"[Erro Fastboot] {ex.Message}", ColorDanger, true);
             }
             finally
             {
@@ -1127,6 +1618,7 @@ namespace MasterUnlock
 
             Action<string, Color, bool> logger = (msg, col, breakline) =>
             {
+                SendXiaomiLog(msg, col, breakline);
                 SendMtpLog(msg, col, breakline);
                 SendLog(msg, col, breakline);
             };
@@ -1134,20 +1626,305 @@ namespace MasterUnlock
             try
             {
                 var info = await XiaomiReader.ReadSideloadInfoAsync(logger, cts.Token);
+                _lastXiaomiSideloadInfo = info;
+
                 if (info.Success)
                 {
-                    SendMtpLog("[SIDELOAD] Leitura Xiaomi Sideload / Recovery concluida com sucesso!", ColorSuccess, true);
+                    SendXiaomiLog("[SIDELOAD] Leitura Xiaomi Sideload / Recovery concluida com sucesso!", ColorSuccess, true);
                 }
             }
             catch (Exception ex)
             {
-                SendMtpLog($"[Erro Sideload] {ex.Message}", ColorDanger, true);
+                SendXiaomiLog($"[Erro Sideload] {ex.Message}", ColorDanger, true);
             }
             finally
             {
                 _btnXiaomiSideload.Enabled = true;
                 SetBusy(false);
             }
+        }
+
+        private async void BtnXiaomiFastbootToEdl_Click(object? sender, EventArgs e)
+        {
+            if (busyState) return;
+
+            var cts = ResetStop();
+            SetBusy(true);
+            _btnXiaomiFastbootToEdl.Enabled = false;
+
+            Action<string, Color, bool> logger = (msg, col, breakline) =>
+            {
+                SendXiaomiLog(msg, col, breakline);
+                SendLog(msg, col, breakline);
+            };
+
+            try
+            {
+                await XiaomiReader.ConvertFastbootToEdlAsync(logger, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                SendXiaomiLog($"[Erro EDL Convert] {ex.Message}", ColorDanger, true);
+            }
+            finally
+            {
+                _btnXiaomiFastbootToEdl.Enabled = true;
+                SetBusy(false);
+            }
+        }
+
+        private void BtnXiaomiUsbDiag_Click(object? sender, EventArgs e)
+        {
+            Action<string, Color, bool> logger = (msg, col, breakline) =>
+            {
+                SendXiaomiLog(msg, col, breakline);
+                SendLog(msg, col, breakline);
+            };
+            XiaomiReader.PerformUsbDiagnosticReport(logger);
+        }
+
+        private async void ExecuteXiaomiReboot(string mode, string target)
+        {
+            if (busyState) return;
+
+            var cts = ResetStop();
+            SetBusy(true);
+
+            Action<string, Color, bool> logger = (msg, col, breakline) =>
+            {
+                SendXiaomiLog(msg, col, breakline);
+                SendLog(msg, col, breakline);
+            };
+
+            try
+            {
+                await XiaomiReader.RebootDeviceAsync(mode, target, logger, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                SendXiaomiLog($"[Erro Reboot] {ex.Message}", ColorDanger, true);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        }
+
+        private void ExportXiaomiReport()
+        {
+            if (string.IsNullOrWhiteSpace(_txtXiaomiLog?.Text))
+            {
+                MessageBox.Show("Nenhum registro no terminal Xiaomi para exportar.", "Master Unlock", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using var sfd = new SaveFileDialog
+            {
+                Filter = "Arquivo de Texto (*.txt)|*.txt",
+                FileName = $"Xiaomi_Report_{DateTime.Now:yyyyMMdd_HHmm}.txt",
+                Title = "Salvar Relatorio Xiaomi - Master Unlock"
+            };
+
+            if (sfd.ShowDialog() == DialogResult.OK)
+            {
+                File.WriteAllText(sfd.FileName, _txtXiaomiLog.Text, Encoding.UTF8);
+                MessageBox.Show("Relatorio Xiaomi salvo com sucesso!", "Master Unlock", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        // ============================================================
+        // SAMSUNG TOOL ACTION HANDLERS
+        // ============================================================
+        private async void BtnSamsungReadInfo_Click(object? sender, EventArgs e)
+        {
+            if (busyState) return;
+
+            var cts = ResetStop();
+            SetBusy(true);
+            _btnSamsungReadInfo.Enabled = false;
+
+            Action<string, Color, bool> logger = (msg, col, breakline) =>
+            {
+                SendSamsungLog(msg, col, breakline);
+                SendMtpLog(msg, col, breakline);
+                SendLog(msg, col, breakline);
+            };
+
+            try
+            {
+                SendSamsungLog("[SAMSUNG] Iniciando leitura detalhada do dispositivo Samsung...", ColorCyanGlow, true);
+
+                var info = await SamsungMtpReader.ReadDeviceInfoAsync(logger, cts.Token);
+                _lastSamsungInfo = info;
+                _lastMtpInfo = info;
+
+                if (info.Success)
+                {
+                    bool isExynos = info.Platform != null && info.Platform.Contains("Exynos", StringComparison.OrdinalIgnoreCase);
+
+                    // Update Top Card in FRP View
+                    _lblDeviceCommercial.Text = info.CommercialName ?? info.ModelNumber ?? "Dispositivo Samsung";
+                    _lblDeviceChipset.Text = $"[{info.Platform ?? info.Chipset ?? "Desconhecido"}]";
+                    _lblDeviceCompatibility.Text = isExynos ? "Compativel" : "Incompativel";
+                    _lblDeviceCompatibility.ForeColor = isExynos ? ColorSuccess : ColorDanger;
+
+                    SendSamsungLog("=================================================", ColorCyanGlow, true);
+                    SendSamsungLog("   SAMSUNG GALAXY - DETALHES DO DISPOSITIVO     ", Color.FromArgb(255, 196, 0), true);
+                    SendSamsungLog("=================================================", ColorCyanGlow, true);
+                    SendSamsungLog($"Dispositivo        : {info.CommercialName ?? "Samsung Galaxy"}", ColorTextWhite, true);
+                    SendSamsungLog($"Modelo             : {info.ModelNumber ?? "Desconhecido"}", ColorCyanGlow, true);
+                    SendSamsungLog($"Plataforma / SoC   : {info.Platform} ({info.Chipset})", isExynos ? ColorSuccess : Color.FromArgb(255, 170, 0), true);
+                    SendSamsungLog($"Versao Android     : {info.AndroidVersion}", ColorTextWhite, true);
+                    SendSamsungLog($"Patch de Seguranca : {info.SecurityPatchLevel}", ColorTextWhite, true);
+                    SendSamsungLog($"Binario (Bit)      : {info.Bit ?? "N/A"}", ColorSuccess, true);
+                    SendSamsungLog($"Build (AP/PDA)     : {info.ApVersion}", ColorTextMuted, true);
+                    SendSamsungLog($"CSC / Regiao       : {info.Csc} ({info.Country ?? "Global"})", ColorTextWhite, true);
+                    SendSamsungLog($"Numero de Serie    : {info.SerialNumber}", ColorTextWhite, true);
+                    SendSamsungLog($"IMEI               : {info.Imei}", ColorTextWhite, true);
+                    if (!string.IsNullOrEmpty(info.Imei2))
+                        SendSamsungLog($"IMEI 2             : {info.Imei2}", ColorTextWhite, true);
+                    SendSamsungLog("=================================================", ColorCyanGlow, true);
+                    SendSamsungLog("[SAMSUNG] Leitura Samsung concluida com sucesso!", ColorSuccess, true);
+                }
+                else
+                {
+                    SendSamsungLog("[SAMSUNG] Nao foi possivel obter todos os metadados via MTP/Modem.", ColorWarning, true);
+                    SendSamsungLog("[DICA] Conecte o aparelho com a tela ligada e desbloqueada na porta USB.", ColorTextMuted, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                SendSamsungLog($"[Erro Leitura Samsung] {ex.Message}", ColorDanger, true);
+            }
+            finally
+            {
+                _btnSamsungReadInfo.Enabled = true;
+                SetBusy(false);
+                UpdateHomeStatus();
+            }
+        }
+
+        private async void BtnSamsungFactoryReset_Click(object? sender, EventArgs e)
+        {
+            if (busyState) return;
+
+            var dr = MessageBox.Show(
+                "Deseja realmente realizar o Resete de Fabrica (Factory Reset / Wipe Data) no dispositivo Samsung conectado?\n\nTodos os dados do usuario serao apagados!",
+                "Confirmacao - Resete de Fabrica",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (dr != DialogResult.Yes) return;
+
+            var cts = ResetStop();
+            SetBusy(true);
+            _btnSamsungFactoryReset.Enabled = false;
+
+            Action<string, Color, bool> logger = (msg, col, breakline) =>
+            {
+                SendSamsungLog(msg, col, breakline);
+                SendLog(msg, col, breakline);
+            };
+
+            try
+            {
+                await SamsungMtpReader.FactoryResetAsync(logger, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                SendSamsungLog($"[Erro Factory Reset] {ex.Message}", ColorDanger, true);
+            }
+            finally
+            {
+                _btnSamsungFactoryReset.Enabled = true;
+                SetBusy(false);
+            }
+        }
+
+        private async void BtnSamsungRebootDownload_Click(object? sender, EventArgs e)
+        {
+            if (busyState) return;
+
+            var cts = ResetStop();
+            SetBusy(true);
+            _btnSamsungRebootDownload.Enabled = false;
+
+            Action<string, Color, bool> logger = (msg, col, breakline) =>
+            {
+                SendSamsungLog(msg, col, breakline);
+                SendLog(msg, col, breakline);
+            };
+
+            try
+            {
+                await SamsungMtpReader.RebootToDownloadModeAsync(logger, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                SendSamsungLog($"[Erro Reboot Download] {ex.Message}", ColorDanger, true);
+            }
+            finally
+            {
+                _btnSamsungRebootDownload.Enabled = true;
+                SetBusy(false);
+            }
+        }
+
+        private void BtnSamsungRemoveFrp_Click(object? sender, EventArgs e)
+        {
+            SendSamsungLog("=================================================", ColorCyanGlow, true);
+            SendSamsungLog("   SAMSUNG TOOL - REMOVE FRP (EM BREVE)          ", Color.FromArgb(255, 196, 0), true);
+            SendSamsungLog("=================================================", ColorCyanGlow, true);
+            SendSamsungLog("[INFO] O modulo de remocao FRP dedicada para Samsung Exynos ja esta disponivel no menu 'FRP Samsung Exynos' na barra lateral!", ColorSuccess, true);
+            SendSamsungLog("[INFO] Novos metodos universais (Qualcomm EDL / MTK BootROM / Knox Bypass) serao adicionados nesta aba nas proximas atualizacoes.", ColorTextWhite, true);
+            SendSamsungLog("=================================================", ColorCyanGlow, true);
+        }
+
+        private void BtnSamsungNewFeature_Click(object? sender, EventArgs e)
+        {
+            SendSamsungLog("=================================================", ColorCyanGlow, true);
+            SendSamsungLog("   SAMSUNG TOOL - NOVA FUNCAO (EM BREVE)        ", Color.FromArgb(190, 105, 255), true);
+            SendSamsungLog("=================================================", ColorCyanGlow, true);
+            SendSamsungLog("[INFO] Este espaco esta reservado para novas funcoes especiais da Samsung Tool (Reparo de IMEI / CSC Changer / Fix Brick).", ColorTextWhite, true);
+            SendSamsungLog("=================================================", ColorCyanGlow, true);
+        }
+
+        private void ExportSamsungReport()
+        {
+            if (string.IsNullOrWhiteSpace(_txtSamsungLog?.Text))
+            {
+                MessageBox.Show("Nenhum registro no terminal Samsung para exportar.", "Master Unlock", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using var sfd = new SaveFileDialog
+            {
+                Filter = "Arquivo de Texto (*.txt)|*.txt",
+                FileName = $"Samsung_Report_{DateTime.Now:yyyyMMdd_HHmm}.txt",
+                Title = "Salvar Relatorio Samsung - Master Unlock"
+            };
+
+            if (sfd.ShowDialog() == DialogResult.OK)
+            {
+                File.WriteAllText(sfd.FileName, _txtSamsungLog.Text, Encoding.UTF8);
+                MessageBox.Show("Relatorio Samsung salvo com sucesso!", "Master Unlock", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void SendSamsungLog(string text, Color color, bool breakline)
+        {
+            if (_txtSamsungLog == null || _txtSamsungLog.IsDisposed) return;
+            Action act = () =>
+            {
+                _txtSamsungLog.SelectionStart = _txtSamsungLog.TextLength;
+                _txtSamsungLog.SelectionLength = 0;
+                _txtSamsungLog.SelectionColor = color;
+                _txtSamsungLog.AppendText(text);
+                if (breakline) _txtSamsungLog.AppendText(Environment.NewLine);
+                _txtSamsungLog.ScrollToCaret();
+            };
+            if (_txtSamsungLog.InvokeRequired) _txtSamsungLog.BeginInvoke(act);
+            else act();
         }
 
         private async void BtnMtpRead_Click(object? sender, EventArgs e)
@@ -2289,8 +3066,8 @@ namespace MasterUnlock
     // CUSTOM GDI+ CONTROLS (CYBER TECH SUITE)
     // ============================================================
 
-    public enum CyberButtonIcon { None, Smartphone, Play, Stop, Trash, Save, Flash, Recovery }
-    public enum CyberNavIcon { Home, Lock, Database, Wrench, Gear, List, Info, Smartphone }
+    public enum CyberButtonIcon { None, Smartphone, Play, Stop, Trash, Save, Flash, Recovery, Lock }
+    public enum CyberNavIcon { Home, Lock, Database, Wrench, Gear, List, Info, Smartphone, Flash }
 
     // Cyber Connection Badge (Live USB / Port connection pill indicator)
     public class CyberConnectionBadge : Control
@@ -2648,6 +3425,10 @@ namespace MasterUnlock
                     g.DrawLine(pen, x + 12, y + 7, x + 8, y + 11);
                     g.DrawLine(pen, x + 2, y + 14, x + 14, y + 14);
                     break;
+                case CyberButtonIcon.Lock:
+                    g.DrawRectangle(pen, x + 3, y + 6, 10, 9);
+                    g.DrawArc(pen, x + 5, y + 1, 6, 8, 180, 180);
+                    break;
             }
         }
 
@@ -2786,6 +3567,17 @@ namespace MasterUnlock
                     g.DrawEllipse(pen, x + 1, y + 1, 13, 13);
                     g.DrawLine(pen, x + 7, y + 6, x + 7, y + 11);
                     g.FillEllipse(brush, x + 6, y + 3, 2, 2);
+                    break;
+                case CyberNavIcon.Flash:
+                    Point[] navBolt = {
+                        new Point(x + 9, y),
+                        new Point(x + 3, y + 8),
+                        new Point(x + 8, y + 8),
+                        new Point(x + 6, y + 15),
+                        new Point(x + 13, y + 7),
+                        new Point(x + 8, y + 7)
+                    };
+                    g.FillPolygon(brush, navBolt);
                     break;
                 default:
                     g.DrawEllipse(pen, x + 2, y + 2, 11, 11);
